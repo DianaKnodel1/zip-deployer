@@ -20,15 +20,15 @@ function AdminApplicationDetailPage() {
   const { applications, loading, loadData } = useAdminData();
   const [accepting, setAccepting] = useState(false);
   const [resending, setResending] = useState(false);
-  const [tenantInfo, setTenantInfo] = useState<{ name: string; domain: string } | null>(null);
+  const [tenantInfo, setTenantInfo] = useState<{ name: string; domain: string; primary_domain: string | null } | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
 
   const app = applications.find((a) => a.id === appId);
 
   useEffect(() => {
     if (!app?.tenant_id) return;
-    supabase.from("tenants").select("name, domain").eq("id", app.tenant_id).maybeSingle().then(({ data }) => {
-      if (data) setTenantInfo(data as { name: string; domain: string });
+    supabase.from("tenants").select("name, domain, primary_domain").eq("id", app.tenant_id).maybeSingle().then(({ data }) => {
+      if (data) setTenantInfo(data as any);
     });
   }, [app]);
 
