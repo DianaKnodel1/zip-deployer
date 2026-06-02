@@ -202,13 +202,21 @@ function AdminChatPage() {
     toast({ title: "Chat als gelöst markiert" });
   };
 
+  const [pendingAttachment, setPendingAttachment] = useState<ChatAttachment | null>(null);
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedUserId || !user) return;
+    if ((!newMessage.trim() && !pendingAttachment) || !selectedUserId || !user) return;
     setSending(true);
     await supabase.from("chat_messages").insert({
-      sender_id: user.id, receiver_id: selectedUserId, message: newMessage.trim(),
+      sender_id: user.id,
+      receiver_id: selectedUserId,
+      message: newMessage.trim() || (pendingAttachment ? `📎 ${pendingAttachment.name}` : ""),
+      attachment_url: pendingAttachment?.url ?? null,
+      attachment_name: pendingAttachment?.name ?? null,
+      attachment_type: pendingAttachment?.type ?? null,
     } as any);
     setNewMessage("");
+    setPendingAttachment(null);
     setSending(false);
   };
 
