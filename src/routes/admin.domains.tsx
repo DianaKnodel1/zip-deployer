@@ -11,7 +11,7 @@ import {
   getAffectedRecipients,
   type AffectedRecipient,
 } from "@/lib/tenant-domains.functions";
-import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Loader2, Users, Download, MessageSquare, Star, ExternalLink } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Loader2, Users, Star, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/admin/domains")({
   component: AdminDomainsPage,
