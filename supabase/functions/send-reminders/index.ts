@@ -64,10 +64,17 @@ function hasValidSmtp(t: TenantRow | null | undefined): t is TenantRow {
   return !!(t && t.smtp_host && t.smtp_port && t.smtp_username && t.smtp_password && t.sender_email);
 }
 
+// Aktive Versand-Domain: bevorzugt primary_domain (Admin-Override für Fallback),
+// fällt auf tenants.domain zurück. Wird in allen Portal-Links genutzt.
+function portalHost(t: TenantRow): string {
+  return `portal.${t.primary_domain ?? t.domain}`;
+}
+
 interface TenantRow {
   id: string;
   name: string;
   domain: string | null;
+  primary_domain: string | null;
   logo_url: string | null;
   primary_color: string | null;
   sender_email: string | null;
