@@ -13,10 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useChatNotifications } from "@/hooks/use-chat-notifications";
-import { Send, Bot, UserCheck, Search, MessageCircle, CheckCircle2 } from "lucide-react";
+import { Send, Bot, UserCheck, Search, MessageCircle, CheckCircle2, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getLastSignIns } from "@/lib/last-sign-ins.functions";
 import { useSearchParams } from "@/lib/router-compat";
+import { EmojiPicker } from "@/components/EmojiPicker";
+import { ChatAttachmentButton, AttachmentPreview, type ChatAttachment } from "@/components/ChatAttachmentButton";
 
 interface Conversation {
   user_id: string;
