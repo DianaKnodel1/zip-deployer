@@ -11,7 +11,7 @@ import {
   getAffectedRecipients,
   type AffectedRecipient,
 } from "@/lib/tenant-domains.functions";
-import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Loader2, Users, Star, ExternalLink } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Loader2, Users, Star, ExternalLink, Download } from "lucide-react";
 
 export const Route = createFileRoute("/admin/domains")({
   component: AdminDomainsPage,
@@ -95,6 +95,38 @@ function AdminDomainsPage() {
       }
     }
   };
+
+  const exportCsv = (tenant_id: string, tenant_name: string, primary_domain: string) => {
+    const list = affected[tenant_id] ?? [];
+    if (list.length === 0) {
+      toast({ title: "Keine Daten", description: 'Erst "Betroffene Empfänger anzeigen" laden.', variant: "destructive" });
+      return;
+    }
+    const header = ["Typ", "Name", "E-Mail", "Telefon", "Status", "Neuer Portal-Link"];
+    const rows = list.map((r) => [
+      r.kind,
+      r.name ?? "",
+      r.email ?? "",
+      r.phone ?? "",
+      r.status,
+      `https://portal.${primary_domain}/`,
+    ]);
+    const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = [header, ...rows].map((row) => row.map(escape).join(",")).join("\r\n");
+    // BOM for Excel UTF-8 compatibility
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().split("T")[0];
+    const safeName = tenant_name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    a.href = url;
+    a.download = `betroffene-empfaenger-${safeName}-${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
 
 
   return (
@@ -196,7 +228,14 @@ function AdminDomainsPage() {
                   <Users className="h-3.5 w-3.5 mr-1" />
                   {openTenantId === t.id ? "Empfänger ausblenden" : "Betroffene Empfänger anzeigen"}
                 </Button>
+                {openTenantId === t.id && (affected[t.id]?.length ?? 0) > 0 && (
+                  <Button size="sm" variant="outline" onClick={() => exportCsv(t.id, t.name, primary)}>
+                    <Download className="h-3.5 w-3.5 mr-1" />
+                    CSV exportieren
+                  </Button>
+                )}
               </div>
+
 
               {openTenantId === t.id && (
                 <div className="border rounded-lg overflow-hidden">
