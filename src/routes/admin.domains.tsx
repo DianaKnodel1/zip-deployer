@@ -11,7 +11,7 @@ import {
   getAffectedRecipients,
   type AffectedRecipient,
 } from "@/lib/tenant-domains.functions";
-import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Loader2, Users, Download, MessageSquare, Star, ExternalLink } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Loader2, Users, Star, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/admin/domains")({
   component: AdminDomainsPage,
@@ -96,33 +96,6 @@ function AdminDomainsPage() {
     }
   };
 
-  const exportCsv = (tenant_id: string, tenant_name: string, primaryDomain: string) => {
-    const list = affected[tenant_id] ?? [];
-    const header = ["Typ", "Name", "E-Mail", "Telefon", "Status", "Letzter Kontakt", "Neuer Portal-Link"].join(";");
-    const lines = list.map((r) => [
-      r.kind,
-      r.name,
-      r.email ?? "",
-      r.phone ?? "",
-      r.status,
-      r.last_contact ?? "",
-      `https://portal.${primaryDomain}/${r.kind === "bewerber" ? "register" : "login"}`,
-    ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"));
-    const csv = [header, ...lines].join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `betroffene_${tenant_name.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const copyWhatsAppMessage = async (tenant_name: string, primaryDomain: string) => {
-    const msg = `Hallo! Unsere Portal-Adresse hat sich geändert. Bitte ab sofort hier einloggen:\n\nhttps://portal.${primaryDomain}/login\n\nViele Grüße,\n${tenant_name}`;
-    await navigator.clipboard.writeText(msg);
-    toast({ title: "Nachricht kopiert", description: "Jetzt in WhatsApp einfügen." });
-  };
 
   return (
     <div className="p-5 max-w-5xl space-y-5">
@@ -223,16 +196,6 @@ function AdminDomainsPage() {
                   <Users className="h-3.5 w-3.5 mr-1" />
                   {openTenantId === t.id ? "Empfänger ausblenden" : "Betroffene Empfänger anzeigen"}
                 </Button>
-                {affected[t.id] && (
-                  <>
-                    <Button size="sm" variant="outline" onClick={() => exportCsv(t.id, t.name, primary)}>
-                      <Download className="h-3.5 w-3.5 mr-1" /> CSV-Export
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => copyWhatsAppMessage(t.name, primary)}>
-                      <MessageSquare className="h-3.5 w-3.5 mr-1" /> WhatsApp-Nachricht kopieren
-                    </Button>
-                  </>
-                )}
               </div>
 
               {openTenantId === t.id && (

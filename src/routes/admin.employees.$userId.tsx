@@ -317,9 +317,6 @@ function AdminEmployeeDetailPage() {
               kycVerified={kyc?.status === "verifiziert"}
             />
           )}
-          {!isAdminProfile && (
-            <MagicLinkButton userId={userId!} fullName={profile.full_name} tenantId={(profile as any)?.tenant_id ?? null} />
-          )}
           <PasswordResetButton email={email} />
           {!isAdminProfile && (
             <DeleteEmployeeButton userId={userId!} fullName={profile.full_name} onDeleted={() => navigate("/admin/employees")} />
