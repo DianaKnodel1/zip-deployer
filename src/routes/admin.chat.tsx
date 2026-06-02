@@ -528,17 +528,40 @@ function AdminChatPage() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-border bg-card px-5 py-3 shrink-0">
+            <div className="border-t border-border bg-card px-5 py-3 shrink-0 space-y-2">
+              {pendingAttachment && (
+                <div className="flex items-center gap-2 text-xs bg-muted/50 px-3 py-2 rounded-lg">
+                  <span className="flex-1 truncate">📎 {pendingAttachment.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPendingAttachment(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Entfernen
+                  </button>
+                </div>
+              )}
               <div className="flex items-end gap-2">
+                <ChatAttachmentButton
+                  userId={user!.id}
+                  onUploaded={setPendingAttachment}
+                  disabled={!selectedUserId}
+                />
+                <EmojiPicker onSelect={(e) => setNewMessage((m) => m + e)} />
                 <Textarea
                   value={newMessage}
                   onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
                   onKeyDown={handleKeyDown}
                   placeholder="Nachricht schreiben… (Shift + Enter = neue Zeile)"
-                  rows={1}
-                  className="flex-1 min-h-[40px] max-h-32 resize-none py-2"
+                  rows={3}
+                  className="flex-1 min-h-[80px] max-h-60 resize-y py-2 text-sm"
                 />
-                <Button size="icon" onClick={sendMessage} disabled={!newMessage.trim() || sending} className="shrink-0">
+                <Button
+                  size="icon"
+                  onClick={sendMessage}
+                  disabled={(!newMessage.trim() && !pendingAttachment) || sending}
+                  className="h-10 w-10 shrink-0"
+                >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
