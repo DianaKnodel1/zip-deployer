@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 import { useTeamLeader } from "@/hooks/use-team-leader";
 import { extractChatActions } from "@/hooks/use-next-step";
 import { ChatActionButtons } from "@/components/ChatActionButtons";
+import { EmojiPicker } from "@/components/EmojiPicker";
+import { ChatAttachmentButton, AttachmentPreview, type ChatAttachment } from "@/components/ChatAttachmentButton";
 
 interface ChatMessage {
   id: string;
@@ -26,6 +28,9 @@ interface ChatMessage {
   message: string;
   read: boolean;
   created_at: string;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
 }
 
 const SYSTEM_PREFIXES = ["✅", "🎓", "📋", "💰", "⚠️", "🎉", "📅", "Willkommen", "Hallo", "✍️"];
