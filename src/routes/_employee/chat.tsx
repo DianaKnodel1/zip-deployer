@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 import { useTeamLeader } from "@/hooks/use-team-leader";
 import { extractChatActions } from "@/hooks/use-next-step";
 import { ChatActionButtons } from "@/components/ChatActionButtons";
+import { EmojiPicker } from "@/components/EmojiPicker";
+import { ChatAttachmentButton, AttachmentPreview, type ChatAttachment } from "@/components/ChatAttachmentButton";
 
 interface ChatMessage {
   id: string;
@@ -26,6 +28,9 @@ interface ChatMessage {
   message: string;
   read: boolean;
   created_at: string;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
 }
 
 const SYSTEM_PREFIXES = ["✅", "🎓", "📋", "💰", "⚠️", "🎉", "📅", "Willkommen", "Hallo", "✍️"];
@@ -126,14 +131,22 @@ function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
+  const [pendingAttachment, setPendingAttachment] = useState<ChatAttachment | null>(null);
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !teamLeaderId || !user) return;
+    if ((!newMessage.trim() && !pendingAttachment) || !teamLeaderId || !user) return;
     setSending(true);
     const { error } = await supabase.from("chat_messages").insert({
-      sender_id: user.id, receiver_id: teamLeaderId, message: newMessage.trim(),
+      sender_id: user.id,
+      receiver_id: teamLeaderId,
+      message: newMessage.trim() || (pendingAttachment ? `📎 ${pendingAttachment.name}` : ""),
+      attachment_url: pendingAttachment?.url ?? null,
+      attachment_name: pendingAttachment?.name ?? null,
+      attachment_type: pendingAttachment?.type ?? null,
     } as any);
     if (error) toast({ title: "Fehler", description: error.message, variant: "destructive" });
     setNewMessage("");
+    setPendingAttachment(null);
     setSending(false);
   };
 
@@ -291,7 +304,14 @@ function ChatPage() {
                         : "bg-card border border-border text-foreground rounded-2xl rounded-bl-md shadow-sm"
                     )}
                   >
-                    <p className="whitespace-pre-wrap leading-relaxed">{msg.message}</p>
+                    {msg.message && <p className="whitespace-pre-wrap leading-relaxed">{msg.message}</p>}
+                    {msg.attachment_url && msg.attachment_type && (
+                      <AttachmentPreview
+                        url={msg.attachment_url}
+                        name={msg.attachment_name ?? "Anhang"}
+                        type={msg.attachment_type}
+                      />
+                    )}
                     {!isMine && chatActions.length > 0 && (
                       <ChatActionButtons actions={chatActions} />
                     )}
@@ -326,20 +346,34 @@ function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-border bg-card px-5 py-3 shrink-0">
+      <div className="border-t border-border bg-card px-5 py-3 shrink-0 space-y-2">
+        {pendingAttachment && (
+          <div className="flex items-center gap-2 text-xs bg-muted/50 px-3 py-2 rounded-lg">
+            <span className="flex-1 truncate">📎 {pendingAttachment.name}</span>
+            <button
+              type="button"
+              onClick={() => setPendingAttachment(null)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Entfernen
+            </button>
+          </div>
+        )}
         <div className="flex items-end gap-2">
+          <ChatAttachmentButton userId={user!.id} onUploaded={setPendingAttachment} />
+          <EmojiPicker onSelect={(e) => setNewMessage((m) => m + e)} />
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Nachricht schreiben… (Shift + Enter = neue Zeile)"
-            rows={1}
-            className="flex-1 rounded-xl border-border/60 focus-visible:ring-primary/30 min-h-[40px] max-h-32 resize-none py-2"
+            rows={3}
+            className="flex-1 rounded-xl border-border/60 focus-visible:ring-primary/30 min-h-[80px] max-h-60 resize-y py-2 text-sm"
           />
           <Button
             size="icon"
             onClick={sendMessage}
-            disabled={!newMessage.trim() || sending}
+            disabled={(!newMessage.trim() && !pendingAttachment) || sending}
             className="h-10 w-10 rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0"
           >
             <Send className="h-4 w-4" />

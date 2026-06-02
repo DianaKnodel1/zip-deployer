@@ -13,10 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useChatNotifications } from "@/hooks/use-chat-notifications";
-import { Send, Bot, UserCheck, Search, MessageCircle, CheckCircle2 } from "lucide-react";
+import { Send, Bot, UserCheck, Search, MessageCircle, CheckCircle2, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getLastSignIns } from "@/lib/last-sign-ins.functions";
 import { useSearchParams } from "@/lib/router-compat";
+import { EmojiPicker } from "@/components/EmojiPicker";
+import { ChatAttachmentButton, AttachmentPreview, type ChatAttachment } from "@/components/ChatAttachmentButton";
 
 interface Conversation {
   user_id: string;
@@ -27,6 +29,7 @@ interface Conversation {
   lastMessage?: string;
   lastAt?: string;
   lastSignInAt?: string | null;
+  tenantName?: string | null;
 }
 
 interface ChatMessage {
@@ -37,6 +40,9 @@ interface ChatMessage {
   read: boolean;
   created_at: string;
   is_ai?: boolean;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
 }
 
 function AdminChatPage() {
@@ -81,8 +87,8 @@ function AdminChatPage() {
 
   const loadConversations = async () => {
     // 1 Query statt N*2: alle Nachrichten in/aus Admin-Postfach holen und client-seitig aggregieren.
-    const [profilesRes, convsRes, msgsRes] = await Promise.all([
-      supabase.from("profiles").select("user_id, full_name"),
+    const [profilesRes, convsRes, msgsRes, tenantsRes] = await Promise.all([
+      supabase.from("profiles").select("user_id, full_name, tenant_id"),
       supabase.from("chat_conversations").select("user_id, status, escalated_at"),
       supabase
         .from("chat_messages")
@@ -90,11 +96,13 @@ function AdminChatPage() {
         .or(`sender_id.eq.${user!.id},receiver_id.eq.${user!.id}`)
         .order("created_at", { ascending: false })
         .limit(5000),
+      supabase.from("tenants").select("id, name"),
     ]);
 
     const profiles = profilesRes.data ?? [];
     if (!profiles.length) { setLoading(false); return; }
-    const profileMap = new Map(profiles.map((p: any) => [p.user_id, p.full_name as string]));
+    const tenantMap = new Map<string, string>(((tenantsRes.data ?? []) as any[]).map((t) => [t.id, t.name]));
+    const profileMap = new Map(profiles.map((p: any) => [p.user_id, { name: p.full_name as string, tenant_id: p.tenant_id as string | null }]));
     const convMap = new Map<string, any>((convsRes.data ?? []).map((c: any) => [c.user_id, c]));
 
     type Agg = { lastMessage: string; lastAt: string; unread: number };
@@ -104,7 +112,6 @@ function AdminChatPage() {
       if (!profileMap.has(partnerId)) continue;
       let entry = agg.get(partnerId);
       if (!entry) {
-        // Erste Nachricht (neueste, da DESC sortiert) → lastMessage
         entry = { lastMessage: m.message, lastAt: m.created_at, unread: 0 };
         agg.set(partnerId, entry);
       }
@@ -114,14 +121,16 @@ function AdminChatPage() {
     const list: Conversation[] = [];
     for (const [partnerId, a] of agg) {
       const conv = convMap.get(partnerId);
+      const prof = profileMap.get(partnerId);
       list.push({
         user_id: partnerId,
-        full_name: profileMap.get(partnerId) ?? "Mitarbeiter",
+        full_name: prof?.name ?? "Mitarbeiter",
         status: conv?.status ?? "direct",
         escalated_at: conv?.escalated_at ?? null,
         unread: a.unread,
         lastMessage: a.lastMessage,
         lastAt: a.lastAt,
+        tenantName: prof?.tenant_id ? tenantMap.get(prof.tenant_id) ?? null : null,
       });
     }
 
@@ -193,13 +202,21 @@ function AdminChatPage() {
     toast({ title: "Chat als gelöst markiert" });
   };
 
+  const [pendingAttachment, setPendingAttachment] = useState<ChatAttachment | null>(null);
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedUserId || !user) return;
+    if ((!newMessage.trim() && !pendingAttachment) || !selectedUserId || !user) return;
     setSending(true);
     await supabase.from("chat_messages").insert({
-      sender_id: user.id, receiver_id: selectedUserId, message: newMessage.trim(),
+      sender_id: user.id,
+      receiver_id: selectedUserId,
+      message: newMessage.trim() || (pendingAttachment ? `📎 ${pendingAttachment.name}` : ""),
+      attachment_url: pendingAttachment?.url ?? null,
+      attachment_name: pendingAttachment?.name ?? null,
+      attachment_type: pendingAttachment?.type ?? null,
     } as any);
     setNewMessage("");
+    setPendingAttachment(null);
     setSending(false);
   };
 
@@ -396,6 +413,11 @@ function AdminChatPage() {
                     <p className="text-sm font-medium text-foreground truncate">{conv.full_name}</p>
                     {statusBadge(conv.status)}
                   </div>
+                  {conv.tenantName && (
+                    <p className="text-[10px] text-primary/80 mt-0.5 flex items-center gap-1 truncate">
+                      <Building2 className="h-2.5 w-2.5 shrink-0" /> {conv.tenantName}
+                    </p>
+                  )}
                   <p className="text-[10px] text-muted-foreground mt-0.5">{formatLastActive(conv.lastSignInAt)}</p>
                   {conv.lastMessage && (
                     <p className="text-xs text-muted-foreground truncate mt-0.5">{conv.lastMessage}</p>
@@ -431,6 +453,11 @@ function AdminChatPage() {
                   <p className="text-sm font-semibold text-foreground">{selectedName}</p>
                   {selectedConv && statusBadge(selectedConv.status)}
                 </div>
+                {selectedConv?.tenantName && (
+                  <p className="text-[11px] text-primary/80 flex items-center gap-1 mt-0.5">
+                    <Building2 className="h-3 w-3" /> {selectedConv.tenantName}
+                  </p>
+                )}
                 {partnerTyping && (
                   <p className="text-[11px] text-primary flex items-center gap-1.5 mt-0.5">
                     <span className="flex gap-0.5">
@@ -480,7 +507,14 @@ function AdminChatPage() {
                           ? "bg-accent/10 text-foreground rounded-bl-md border border-accent/20"
                           : "bg-muted text-foreground rounded-bl-md"
                     )}>
-                      <p className="whitespace-pre-wrap">{msg.message}</p>
+                      {msg.message && <p className="whitespace-pre-wrap">{msg.message}</p>}
+                      {msg.attachment_url && msg.attachment_type && (
+                        <AttachmentPreview
+                          url={msg.attachment_url}
+                          name={msg.attachment_name ?? "Anhang"}
+                          type={msg.attachment_type}
+                        />
+                      )}
                       <p className={cn("text-[10px] mt-1", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
                         {new Date(msg.created_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
                         {isAi && " · 🤖 KI"}
@@ -494,17 +528,40 @@ function AdminChatPage() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-border bg-card px-5 py-3 shrink-0">
+            <div className="border-t border-border bg-card px-5 py-3 shrink-0 space-y-2">
+              {pendingAttachment && (
+                <div className="flex items-center gap-2 text-xs bg-muted/50 px-3 py-2 rounded-lg">
+                  <span className="flex-1 truncate">📎 {pendingAttachment.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPendingAttachment(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Entfernen
+                  </button>
+                </div>
+              )}
               <div className="flex items-end gap-2">
+                <ChatAttachmentButton
+                  userId={user!.id}
+                  onUploaded={setPendingAttachment}
+                  disabled={!selectedUserId}
+                />
+                <EmojiPicker onSelect={(e) => setNewMessage((m) => m + e)} />
                 <Textarea
                   value={newMessage}
                   onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
                   onKeyDown={handleKeyDown}
                   placeholder="Nachricht schreiben… (Shift + Enter = neue Zeile)"
-                  rows={1}
-                  className="flex-1 min-h-[40px] max-h-32 resize-none py-2"
+                  rows={3}
+                  className="flex-1 min-h-[80px] max-h-60 resize-y py-2 text-sm"
                 />
-                <Button size="icon" onClick={sendMessage} disabled={!newMessage.trim() || sending} className="shrink-0">
+                <Button
+                  size="icon"
+                  onClick={sendMessage}
+                  disabled={(!newMessage.trim() && !pendingAttachment) || sending}
+                  className="h-10 w-10 shrink-0"
+                >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>

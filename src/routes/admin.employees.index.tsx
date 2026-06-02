@@ -108,22 +108,31 @@ function AdminEmployeesPage() {
   const handleBulkDelete = async () => {
     setBulkDeleting(true);
     const ids = Array.from(selected);
-    let ok = 0, fail = 0;
+    const deletedIds: string[] = [];
+    const errors: string[] = [];
     for (const uid of ids) {
       try {
         await deleteEmployeeAccount({ data: { user_id: uid, confirm: "MITARBEITER LÖSCHEN" } });
-        ok++;
-      } catch { fail++; }
+        deletedIds.push(uid);
+      } catch (err: any) {
+        errors.push(err?.message ?? "Unbekannter Fehler");
+      }
     }
-    setProfiles((prev) => prev.filter((p) => !selected.has(p.user_id)));
+    const deletedSet = new Set(deletedIds);
+    setProfiles((prev) => prev.filter((p) => !deletedSet.has(p.user_id)));
     setSelected(new Set());
     setBulkDeleteOpen(false);
     setBulkConfirm("");
     setBulkDeleting(false);
-    toast({
-      title: `${ok} gelöscht${fail ? `, ${fail} fehlgeschlagen` : ""}`,
-      variant: fail ? "destructive" : "default",
-    });
+    if (errors.length === 0) {
+      toast({ title: `${deletedIds.length} gelöscht` });
+    } else {
+      toast({
+        title: `${deletedIds.length} gelöscht, ${errors.length} fehlgeschlagen`,
+        description: errors.slice(0, 3).join(" · "),
+        variant: "destructive",
+      });
+    }
   };
 
   useEffect(() => {
