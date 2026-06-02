@@ -453,6 +453,11 @@ function AdminChatPage() {
                   <p className="text-sm font-semibold text-foreground">{selectedName}</p>
                   {selectedConv && statusBadge(selectedConv.status)}
                 </div>
+                {selectedConv?.tenantName && (
+                  <p className="text-[11px] text-primary/80 flex items-center gap-1 mt-0.5">
+                    <Building2 className="h-3 w-3" /> {selectedConv.tenantName}
+                  </p>
+                )}
                 {partnerTyping && (
                   <p className="text-[11px] text-primary flex items-center gap-1.5 mt-0.5">
                     <span className="flex gap-0.5">
