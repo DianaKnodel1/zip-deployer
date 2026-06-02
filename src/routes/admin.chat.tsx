@@ -29,6 +29,7 @@ interface Conversation {
   lastMessage?: string;
   lastAt?: string;
   lastSignInAt?: string | null;
+  tenantName?: string | null;
 }
 
 interface ChatMessage {
@@ -39,6 +40,9 @@ interface ChatMessage {
   read: boolean;
   created_at: string;
   is_ai?: boolean;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
 }
 
 function AdminChatPage() {
