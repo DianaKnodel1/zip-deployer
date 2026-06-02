@@ -64,10 +64,17 @@ function hasValidSmtp(t: TenantRow | null | undefined): t is TenantRow {
   return !!(t && t.smtp_host && t.smtp_port && t.smtp_username && t.smtp_password && t.sender_email);
 }
 
+// Aktive Versand-Domain: bevorzugt primary_domain (Admin-Override für Fallback),
+// fällt auf tenants.domain zurück. Wird in allen Portal-Links genutzt.
+function portalHost(t: TenantRow): string {
+  return `portal.${t.primary_domain ?? t.domain}`;
+}
+
 interface TenantRow {
   id: string;
   name: string;
   domain: string | null;
+  primary_domain: string | null;
   logo_url: string | null;
   primary_color: string | null;
   sender_email: string | null;
@@ -126,7 +133,7 @@ serve(async (req) => {
     // Tenants vorladen
     const { data: tList, error: tErr } = await admin
       .from("tenants")
-      .select("id,name,domain,logo_url,primary_color,sender_email,sender_name,reply_to_email,smtp_host,smtp_port,smtp_username,smtp_password,reminder_invite_subject,reminder_invite_body,reminder_confirm_subject,reminder_confirm_body,reminder_completion_subject,reminder_completion_body,reminder_no_booking_subject,reminder_no_booking_body");
+      .select("id,name,domain,primary_domain,logo_url,primary_color,sender_email,sender_name,reply_to_email,smtp_host,smtp_port,smtp_username,smtp_password,reminder_invite_subject,reminder_invite_body,reminder_confirm_subject,reminder_confirm_body,reminder_completion_subject,reminder_completion_body,reminder_no_booking_subject,reminder_no_booking_body");
     if (tErr) return json({ error: tErr.message }, 500);
 
     const tenants = new Map<string, TenantRow>();
@@ -233,7 +240,7 @@ async function runInvites(ctx: SendCtx) {
 
     if (ctx.dryRun) { ctx.results.push({ type: "invite", email, status: "sent" }); continue; }
 
-    const portalLink = `https://portal.${tenant.domain}/register`;
+    const portalLink = `https://${portalHost(tenant)}/register`;
     const firstName = app.first_name ?? (app.full_name ?? "").split(" ")[0] ?? "";
     const vars = baseVars(tenant, { first_name: firstName, portal_link: portalLink, login_link: portalLink, confirmation_link: portalLink, booking_link: portalLink });
     const subject = renderSubject(tenant.reminder_invite_subject, DEFAULT_TEMPLATES.invite.subject, vars);
@@ -284,7 +291,7 @@ async function runConfirmEmail(ctx: SendCtx) {
 
     if (ctx.dryRun) { ctx.results.push({ type: "confirm_email", email, status: "sent" }); continue; }
 
-    const redirectTo = `https://portal.${tenant.domain}/auth/confirmed`;
+    const redirectTo = `https://${portalHost(tenant)}/auth/confirmed`;
     const linkRes = await ctx.admin.auth.admin.generateLink({ type: "signup", email, options: { redirectTo } });
     const tokenHash = (linkRes.data?.properties as any)?.hashed_token;
     if (!tokenHash) {
@@ -339,7 +346,7 @@ async function runCompleteRegistration(ctx: SendCtx) {
     if (ctx.dryRun) { ctx.results.push({ type: "complete_registration", email, status: "sent" }); continue; }
 
     const firstName = ((p as any).full_name ?? "").split(" ")[0] ?? "";
-    const loginLink = `https://portal.${tenant.domain}/login`;
+    const loginLink = `https://${portalHost(tenant)}/login`;
     const vars = baseVars(tenant, { first_name: firstName, login_link: loginLink, portal_link: loginLink, booking_link: loginLink, confirmation_link: loginLink });
     const subject = renderSubject(tenant.reminder_completion_subject, DEFAULT_TEMPLATES.completion.subject, vars);
     const html = renderBodyHtml(tenant, tenant.reminder_completion_body, DEFAULT_TEMPLATES.completion.body, vars);
@@ -404,7 +411,7 @@ async function runNoRecentBooking(ctx: SendCtx) {
     if (ctx.dryRun) { ctx.results.push({ type: "no_recent_booking", email, status: "sent" }); continue; }
 
     const firstName = ((p as any).full_name ?? "").split(" ")[0] ?? "";
-    const bookingLink = `https://portal.${tenant.domain}/appointments`;
+    const bookingLink = `https://${portalHost(tenant)}/appointments`;
     const vars = baseVars(tenant, { first_name: firstName, booking_link: bookingLink, portal_link: bookingLink, login_link: bookingLink, confirmation_link: bookingLink });
     const subject = renderSubject(tenant.reminder_no_booking_subject, DEFAULT_TEMPLATES.no_booking.subject, vars);
     const html = renderBodyHtml(tenant, tenant.reminder_no_booking_body, DEFAULT_TEMPLATES.no_booking.body, vars);
