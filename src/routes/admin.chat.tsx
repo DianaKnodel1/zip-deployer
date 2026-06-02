@@ -87,8 +87,8 @@ function AdminChatPage() {
 
   const loadConversations = async () => {
     // 1 Query statt N*2: alle Nachrichten in/aus Admin-Postfach holen und client-seitig aggregieren.
-    const [profilesRes, convsRes, msgsRes] = await Promise.all([
-      supabase.from("profiles").select("user_id, full_name"),
+    const [profilesRes, convsRes, msgsRes, tenantsRes] = await Promise.all([
+      supabase.from("profiles").select("user_id, full_name, tenant_id"),
       supabase.from("chat_conversations").select("user_id, status, escalated_at"),
       supabase
         .from("chat_messages")
@@ -96,11 +96,13 @@ function AdminChatPage() {
         .or(`sender_id.eq.${user!.id},receiver_id.eq.${user!.id}`)
         .order("created_at", { ascending: false })
         .limit(5000),
+      supabase.from("tenants").select("id, name"),
     ]);
 
     const profiles = profilesRes.data ?? [];
     if (!profiles.length) { setLoading(false); return; }
-    const profileMap = new Map(profiles.map((p: any) => [p.user_id, p.full_name as string]));
+    const tenantMap = new Map<string, string>(((tenantsRes.data ?? []) as any[]).map((t) => [t.id, t.name]));
+    const profileMap = new Map(profiles.map((p: any) => [p.user_id, { name: p.full_name as string, tenant_id: p.tenant_id as string | null }]));
     const convMap = new Map<string, any>((convsRes.data ?? []).map((c: any) => [c.user_id, c]));
 
     type Agg = { lastMessage: string; lastAt: string; unread: number };
@@ -110,7 +112,6 @@ function AdminChatPage() {
       if (!profileMap.has(partnerId)) continue;
       let entry = agg.get(partnerId);
       if (!entry) {
-        // Erste Nachricht (neueste, da DESC sortiert) → lastMessage
         entry = { lastMessage: m.message, lastAt: m.created_at, unread: 0 };
         agg.set(partnerId, entry);
       }
@@ -120,14 +121,16 @@ function AdminChatPage() {
     const list: Conversation[] = [];
     for (const [partnerId, a] of agg) {
       const conv = convMap.get(partnerId);
+      const prof = profileMap.get(partnerId);
       list.push({
         user_id: partnerId,
-        full_name: profileMap.get(partnerId) ?? "Mitarbeiter",
+        full_name: prof?.name ?? "Mitarbeiter",
         status: conv?.status ?? "direct",
         escalated_at: conv?.escalated_at ?? null,
         unread: a.unread,
         lastMessage: a.lastMessage,
         lastAt: a.lastAt,
+        tenantName: prof?.tenant_id ? tenantMap.get(prof.tenant_id) ?? null : null,
       });
     }
 
