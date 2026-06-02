@@ -196,16 +196,6 @@ function AdminDomainsPage() {
                   <Users className="h-3.5 w-3.5 mr-1" />
                   {openTenantId === t.id ? "Empfänger ausblenden" : "Betroffene Empfänger anzeigen"}
                 </Button>
-                {affected[t.id] && (
-                  <>
-                    <Button size="sm" variant="outline" onClick={() => exportCsv(t.id, t.name, primary)}>
-                      <Download className="h-3.5 w-3.5 mr-1" /> CSV-Export
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => copyWhatsAppMessage(t.name, primary)}>
-                      <MessageSquare className="h-3.5 w-3.5 mr-1" /> WhatsApp-Nachricht kopieren
-                    </Button>
-                  </>
-                )}
               </div>
 
               {openTenantId === t.id && (
