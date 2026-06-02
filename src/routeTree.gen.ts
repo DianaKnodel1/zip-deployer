@@ -33,6 +33,7 @@ import { Route as AdminLandingGeneratorRouteImport } from './routes/admin.landin
 import { Route as AdminKycRouteImport } from './routes/admin.kyc'
 import { Route as AdminEmailTemplatesRouteImport } from './routes/admin.email-templates'
 import { Route as AdminEmailLogsRouteImport } from './routes/admin.email-logs'
+import { Route as AdminDomainsRouteImport } from './routes/admin.domains'
 import { Route as AdminContractsRouteImport } from './routes/admin.contracts'
 import { Route as AdminChatRouteImport } from './routes/admin.chat'
 import { Route as AdminAppointmentsRouteImport } from './routes/admin.appointments'
@@ -178,6 +179,11 @@ const AdminEmailTemplatesRoute = AdminEmailTemplatesRouteImport.update({
 const AdminEmailLogsRoute = AdminEmailLogsRouteImport.update({
   id: '/email-logs',
   path: '/email-logs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDomainsRoute = AdminDomainsRouteImport.update({
+  id: '/domains',
+  path: '/domains',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminContractsRoute = AdminContractsRouteImport.update({
@@ -345,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/chat': typeof AdminChatRoute
   '/admin/contracts': typeof AdminContractsRoute
+  '/admin/domains': typeof AdminDomainsRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
   '/admin/email-templates': typeof AdminEmailTemplatesRoute
   '/admin/kyc': typeof AdminKycRoute
@@ -396,6 +403,7 @@ export interface FileRoutesByTo {
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/chat': typeof AdminChatRoute
   '/admin/contracts': typeof AdminContractsRoute
+  '/admin/domains': typeof AdminDomainsRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
   '/admin/email-templates': typeof AdminEmailTemplatesRoute
   '/admin/kyc': typeof AdminKycRoute
@@ -450,6 +458,7 @@ export interface FileRoutesById {
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/chat': typeof AdminChatRoute
   '/admin/contracts': typeof AdminContractsRoute
+  '/admin/domains': typeof AdminDomainsRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
   '/admin/email-templates': typeof AdminEmailTemplatesRoute
   '/admin/kyc': typeof AdminKycRoute
@@ -504,6 +513,7 @@ export interface FileRouteTypes {
     | '/admin/appointments'
     | '/admin/chat'
     | '/admin/contracts'
+    | '/admin/domains'
     | '/admin/email-logs'
     | '/admin/email-templates'
     | '/admin/kyc'
@@ -555,6 +565,7 @@ export interface FileRouteTypes {
     | '/admin/appointments'
     | '/admin/chat'
     | '/admin/contracts'
+    | '/admin/domains'
     | '/admin/email-logs'
     | '/admin/email-templates'
     | '/admin/kyc'
@@ -608,6 +619,7 @@ export interface FileRouteTypes {
     | '/admin/appointments'
     | '/admin/chat'
     | '/admin/contracts'
+    | '/admin/domains'
     | '/admin/email-logs'
     | '/admin/email-templates'
     | '/admin/kyc'
@@ -816,6 +828,13 @@ declare module '@tanstack/react-router' {
       path: '/email-logs'
       fullPath: '/admin/email-logs'
       preLoaderRoute: typeof AdminEmailLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/domains': {
+      id: '/admin/domains'
+      path: '/domains'
+      fullPath: '/admin/domains'
+      preLoaderRoute: typeof AdminDomainsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/contracts': {
@@ -1064,6 +1083,7 @@ interface AdminRouteChildren {
   AdminAppointmentsRoute: typeof AdminAppointmentsRoute
   AdminChatRoute: typeof AdminChatRoute
   AdminContractsRoute: typeof AdminContractsRoute
+  AdminDomainsRoute: typeof AdminDomainsRoute
   AdminEmailLogsRoute: typeof AdminEmailLogsRoute
   AdminEmailTemplatesRoute: typeof AdminEmailTemplatesRoute
   AdminKycRoute: typeof AdminKycRoute
@@ -1094,6 +1114,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAppointmentsRoute: AdminAppointmentsRoute,
   AdminChatRoute: AdminChatRoute,
   AdminContractsRoute: AdminContractsRoute,
+  AdminDomainsRoute: AdminDomainsRoute,
   AdminEmailLogsRoute: AdminEmailLogsRoute,
   AdminEmailTemplatesRoute: AdminEmailTemplatesRoute,
   AdminKycRoute: AdminKycRoute,
