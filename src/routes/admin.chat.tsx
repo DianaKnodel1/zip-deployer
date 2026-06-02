@@ -507,7 +507,14 @@ function AdminChatPage() {
                           ? "bg-accent/10 text-foreground rounded-bl-md border border-accent/20"
                           : "bg-muted text-foreground rounded-bl-md"
                     )}>
-                      <p className="whitespace-pre-wrap">{msg.message}</p>
+                      {msg.message && <p className="whitespace-pre-wrap">{msg.message}</p>}
+                      {msg.attachment_url && msg.attachment_type && (
+                        <AttachmentPreview
+                          url={msg.attachment_url}
+                          name={msg.attachment_name ?? "Anhang"}
+                          type={msg.attachment_type}
+                        />
+                      )}
                       <p className={cn("text-[10px] mt-1", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
                         {new Date(msg.created_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
                         {isAi && " · 🤖 KI"}
