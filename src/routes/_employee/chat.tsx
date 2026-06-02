@@ -131,14 +131,22 @@ function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
+  const [pendingAttachment, setPendingAttachment] = useState<ChatAttachment | null>(null);
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !teamLeaderId || !user) return;
+    if ((!newMessage.trim() && !pendingAttachment) || !teamLeaderId || !user) return;
     setSending(true);
     const { error } = await supabase.from("chat_messages").insert({
-      sender_id: user.id, receiver_id: teamLeaderId, message: newMessage.trim(),
+      sender_id: user.id,
+      receiver_id: teamLeaderId,
+      message: newMessage.trim() || (pendingAttachment ? `📎 ${pendingAttachment.name}` : ""),
+      attachment_url: pendingAttachment?.url ?? null,
+      attachment_name: pendingAttachment?.name ?? null,
+      attachment_type: pendingAttachment?.type ?? null,
     } as any);
     if (error) toast({ title: "Fehler", description: error.message, variant: "destructive" });
     setNewMessage("");
+    setPendingAttachment(null);
     setSending(false);
   };
 
