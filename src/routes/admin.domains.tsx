@@ -99,7 +99,7 @@ function AdminDomainsPage() {
   const exportCsv = (tenant_id: string, tenant_name: string, primary_domain: string) => {
     const list = affected[tenant_id] ?? [];
     if (list.length === 0) {
-      toast({ title: "Keine Daten", description: "Erst „Betroffene Empfänger anzeigen" laden.", variant: "destructive" });
+      toast({ title: "Keine Daten", description: 'Erst "Betroffene Empfänger anzeigen" laden.', variant: "destructive" });
       return;
     }
     const header = ["Typ", "Name", "E-Mail", "Telefon", "Status", "Neuer Portal-Link"];
