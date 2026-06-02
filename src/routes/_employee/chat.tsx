@@ -304,7 +304,14 @@ function ChatPage() {
                         : "bg-card border border-border text-foreground rounded-2xl rounded-bl-md shadow-sm"
                     )}
                   >
-                    <p className="whitespace-pre-wrap leading-relaxed">{msg.message}</p>
+                    {msg.message && <p className="whitespace-pre-wrap leading-relaxed">{msg.message}</p>}
+                    {msg.attachment_url && msg.attachment_type && (
+                      <AttachmentPreview
+                        url={msg.attachment_url}
+                        name={msg.attachment_name ?? "Anhang"}
+                        type={msg.attachment_type}
+                      />
+                    )}
                     {!isMine && chatActions.length > 0 && (
                       <ChatActionButtons actions={chatActions} />
                     )}
