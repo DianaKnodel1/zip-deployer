@@ -163,40 +163,21 @@ export const getAffectedRecipients = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const sb = supabaseAdmin as any;
 
-    // Bewerber: noch aktiv (nicht abgelehnt)
-    const { data: apps, error: aErr } = await sb
-      .from("applications")
-      .select("id,full_name,email,phone,status,created_at,updated_at")
-      .eq("tenant_id", data.tenant_id)
-      .neq("status", "abgelehnt");
-    if (aErr) throw new Error(aErr.message);
-
-    // Mitarbeiter: noch aktiv (nicht abgeschlossen)
+    // Bewerber: bewusst NICHT enthalten (User-Entscheidung: Bewerber sind unkritisch).
+    // Mitarbeiter: ALLE anzeigen, inkl. "abgeschlossen", da auch fertig eingearbeitete
+    // bei Domain-Down einen neuen Portal-Link brauchen.
     const { data: profiles, error: pErr } = await sb
       .from("profiles")
-      .select("id,user_id,full_name,phone,status,last_reminder_sent_at,created_at")
-      .eq("tenant_id", data.tenant_id)
-      .neq("status", "abgeschlossen");
+      .select("id,user_id,full_name,phone,status,onboarding_status,last_reminder_sent_at,created_at")
+      .eq("tenant_id", data.tenant_id);
     if (pErr) throw new Error(pErr.message);
 
-    // Auth-Mails für Profiles holen
     const { data: usersList } = await sb.auth.admin.listUsers({ page: 1, perPage: 5000 });
     const emailByUserId = new Map<string, string>(
       (usersList?.users ?? []).map((u: any) => [u.id, (u.email ?? "").toLowerCase()])
     );
 
     const recipients: AffectedRecipient[] = [];
-    for (const a of apps ?? []) {
-      recipients.push({
-        kind: "bewerber",
-        id: a.id,
-        name: a.full_name ?? "",
-        email: a.email ?? null,
-        phone: a.phone ?? null,
-        status: a.status ?? "",
-        last_contact: a.updated_at ?? a.created_at ?? null,
-      });
-    }
     for (const p of profiles ?? []) {
       recipients.push({
         kind: "mitarbeiter",
@@ -204,7 +185,7 @@ export const getAffectedRecipients = createServerFn({ method: "POST" })
         name: p.full_name ?? "",
         email: emailByUserId.get(p.user_id) ?? null,
         phone: p.phone ?? null,
-        status: p.status ?? "",
+        status: p.status ?? p.onboarding_status ?? "",
         last_contact: p.last_reminder_sent_at ?? p.created_at ?? null,
       });
     }
