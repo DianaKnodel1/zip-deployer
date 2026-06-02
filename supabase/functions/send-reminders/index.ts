@@ -240,7 +240,7 @@ async function runInvites(ctx: SendCtx) {
 
     if (ctx.dryRun) { ctx.results.push({ type: "invite", email, status: "sent" }); continue; }
 
-    const portalLink = `https://portal.${tenant.domain}/register`;
+    const portalLink = `https://${portalHost(tenant)}/register`;
     const firstName = app.first_name ?? (app.full_name ?? "").split(" ")[0] ?? "";
     const vars = baseVars(tenant, { first_name: firstName, portal_link: portalLink, login_link: portalLink, confirmation_link: portalLink, booking_link: portalLink });
     const subject = renderSubject(tenant.reminder_invite_subject, DEFAULT_TEMPLATES.invite.subject, vars);
@@ -291,7 +291,7 @@ async function runConfirmEmail(ctx: SendCtx) {
 
     if (ctx.dryRun) { ctx.results.push({ type: "confirm_email", email, status: "sent" }); continue; }
 
-    const redirectTo = `https://portal.${tenant.domain}/auth/confirmed`;
+    const redirectTo = `https://${portalHost(tenant)}/auth/confirmed`;
     const linkRes = await ctx.admin.auth.admin.generateLink({ type: "signup", email, options: { redirectTo } });
     const tokenHash = (linkRes.data?.properties as any)?.hashed_token;
     if (!tokenHash) {
@@ -346,7 +346,7 @@ async function runCompleteRegistration(ctx: SendCtx) {
     if (ctx.dryRun) { ctx.results.push({ type: "complete_registration", email, status: "sent" }); continue; }
 
     const firstName = ((p as any).full_name ?? "").split(" ")[0] ?? "";
-    const loginLink = `https://portal.${tenant.domain}/login`;
+    const loginLink = `https://${portalHost(tenant)}/login`;
     const vars = baseVars(tenant, { first_name: firstName, login_link: loginLink, portal_link: loginLink, booking_link: loginLink, confirmation_link: loginLink });
     const subject = renderSubject(tenant.reminder_completion_subject, DEFAULT_TEMPLATES.completion.subject, vars);
     const html = renderBodyHtml(tenant, tenant.reminder_completion_body, DEFAULT_TEMPLATES.completion.body, vars);
@@ -411,7 +411,7 @@ async function runNoRecentBooking(ctx: SendCtx) {
     if (ctx.dryRun) { ctx.results.push({ type: "no_recent_booking", email, status: "sent" }); continue; }
 
     const firstName = ((p as any).full_name ?? "").split(" ")[0] ?? "";
-    const bookingLink = `https://portal.${tenant.domain}/appointments`;
+    const bookingLink = `https://${portalHost(tenant)}/appointments`;
     const vars = baseVars(tenant, { first_name: firstName, booking_link: bookingLink, portal_link: bookingLink, login_link: bookingLink, confirmation_link: bookingLink });
     const subject = renderSubject(tenant.reminder_no_booking_subject, DEFAULT_TEMPLATES.no_booking.subject, vars);
     const html = renderBodyHtml(tenant, tenant.reminder_no_booking_body, DEFAULT_TEMPLATES.no_booking.body, vars);
