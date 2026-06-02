@@ -36,7 +36,7 @@ function AdminApplicationDetailPage() {
     if (!app) return false;
     try {
       const portalLink = tenantInfo?.domain
-        ? `https://portal.${tenantInfo.domain}/register`
+        ? `https://portal.${tenantInfo.primary_domain ?? tenantInfo.domain}/register`
         : `${window.location.origin}/register`;
 
       const { data, error } = await supabase.functions.invoke("send-invitation-email", {
@@ -111,7 +111,7 @@ function AdminApplicationDetailPage() {
   };
 
   const portalLink = tenantInfo?.domain
-    ? `https://portal.${tenantInfo.domain}/register`
+    ? `https://portal.${tenantInfo.primary_domain ?? tenantInfo.domain}/register`
     : `${window.location.origin}/register`;
 
   const copyLink = () => {
