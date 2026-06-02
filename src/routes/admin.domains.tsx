@@ -228,7 +228,14 @@ function AdminDomainsPage() {
                   <Users className="h-3.5 w-3.5 mr-1" />
                   {openTenantId === t.id ? "Empfänger ausblenden" : "Betroffene Empfänger anzeigen"}
                 </Button>
+                {openTenantId === t.id && (affected[t.id]?.length ?? 0) > 0 && (
+                  <Button size="sm" variant="outline" onClick={() => exportCsv(t.id, t.name, primary)}>
+                    <Download className="h-3.5 w-3.5 mr-1" />
+                    CSV exportieren
+                  </Button>
+                )}
               </div>
+
 
               {openTenantId === t.id && (
                 <div className="border rounded-lg overflow-hidden">
