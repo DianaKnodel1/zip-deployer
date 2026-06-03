@@ -7,18 +7,28 @@
     status.className = "status";
     status.textContent = "Wird gesendet…";
     var data = Object.fromEntries(new FormData(form).entries());
+    data.flow_type = window.FLOW_TYPE || "classic";
+    if (window.TENANT_ID) data.tenant_id = window.TENANT_ID;
+    if (window.PORTAL_URL) data.portal_url = window.PORTAL_URL;
     fetch(window.PORTAL_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(function () {
-        status.className = "status success";
-        status.textContent = "Danke! Du wirst zum Mitarbeiter-Portal weitergeleitet…";
+      .then(function (res) {
         form.reset();
-        if (window.PORTAL_URL) {
-          setTimeout(function () { window.location.href = window.PORTAL_URL; }, 1200);
+        if (res && res.redirect_url) {
+          status.className = "status success";
+          status.textContent = "Danke! Du wirst zur Registrierung weitergeleitet…";
+          setTimeout(function () { window.location.href = res.redirect_url; }, 1000);
+        } else if ((window.FLOW_TYPE || "classic") === "fast" && window.PORTAL_URL) {
+          status.className = "status success";
+          status.textContent = "Danke! Du wirst zur Registrierung weitergeleitet…";
+          setTimeout(function () { window.location.href = window.PORTAL_URL + "/register?email=" + encodeURIComponent(data.email) + "&fast=1"; }, 1000);
+        } else {
+          status.className = "status success";
+          status.textContent = "Danke! Wir melden uns in Kürze per E-Mail.";
         }
       })
       .catch(function () {
