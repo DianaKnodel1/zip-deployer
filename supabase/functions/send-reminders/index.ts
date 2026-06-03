@@ -476,8 +476,8 @@ async function runDomainRecovery(ctx: SendCtx, tenantId: string) {
     const firstName = ((p as any).full_name ?? "").split(" ")[0] ?? "";
     const portalLink = `https://${portalHost(tenant)}/login`;
     const vars = baseVars(tenant, { first_name: firstName, portal_link: portalLink, login_link: portalLink, booking_link: portalLink, confirmation_link: portalLink });
-    const subject = renderSubject(null, DEFAULT_TEMPLATES.domain_recovery.subject, vars);
-    const html = renderBodyHtml(tenant, null, DEFAULT_TEMPLATES.domain_recovery.body, vars);
+    const subject = renderSubject(tenant.reminder_recovery_subject, DEFAULT_TEMPLATES.domain_recovery.subject, vars);
+    const html = renderBodyHtml(tenant, tenant.reminder_recovery_body, DEFAULT_TEMPLATES.domain_recovery.body, vars);
 
     try {
       await sendMail(tenant, email, subject, html);
