@@ -169,197 +169,227 @@ function LandingGeneratorPage() {
     : "https://portal.deine-domain.de/api/public/applications";
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
-          <Globe className="h-5 w-5" /> Landing-Page-Generator
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Theme auswählen, Branding ausfüllen, ZIP herunterladen und per FileZilla auf deinen VPS hochladen.
-        </p>
+    <div className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
+            <Globe className="h-5 w-5" /> Landing-Page-Generator
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Theme auswählen, Branding ausfüllen, ZIP herunterladen und per FileZilla auf deinen VPS hochladen.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowPreview((s) => !s)}
+          className="gap-2 lg:hidden"
+        >
+          <Eye className="h-4 w-4" />
+          {showPreview ? "Vorschau aus" : "Vorschau ein"}
+        </Button>
       </div>
 
-      {/* Step 1: Theme */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">1. Theme wählen</CardTitle>
-          <CardDescription>Weitere Themes (02–06) folgen, sobald du sie lieferst.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {THEME_LIST.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setThemeId(t.id)}
-                className={cn(
-                  "text-left rounded-lg border-2 p-4 transition-all",
-                  themeId === t.id
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-border hover:border-primary/40",
-                )}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-sm">{t.name}</span>
-                  {themeId === t.id && <CheckCircle2 className="h-4 w-4 text-primary" />}
+      <div className="grid lg:grid-cols-[1fr_640px] gap-6 items-start">
+        {/* LEFT: Form */}
+        <div className="space-y-6 min-w-0">
+          {/* Step 1: Theme */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">1. Theme wählen</CardTitle>
+              <CardDescription>Weitere Themes (02–06) folgen, sobald du sie lieferst.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {THEME_LIST.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setThemeId(t.id)}
+                    className={cn(
+                      "text-left rounded-lg border-2 p-4 transition-all",
+                      themeId === t.id
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/40",
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-sm">{t.name}</span>
+                      {themeId === t.id && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t.description}</p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-2 font-mono">{t.id}</p>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Step 2: Branding */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">2. Branding & Inhalte</CardTitle>
+              <CardDescription>Änderungen erscheinen sofort in der Live-Vorschau rechts.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Field label="Firmenname *"><Input value={branding.firmenname} onChange={set("firmenname")} placeholder="Mustermann GmbH" /></Field>
+                <Field label="Logo (PNG/JPG/SVG, max 2 MB)">
+                  <div className="space-y-2">
+                    <Input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={onLogo} />
+                    {logoDataUrl && (
+                      <div className="rounded border bg-muted/30 p-2 flex items-center justify-center h-16">
+                        <img src={logoDataUrl} alt="Logo Preview" className="max-h-12 object-contain" />
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground">Empfohlen: ≥200×60 px, transparenter Hintergrund.</p>
+                  </div>
+                </Field>
+                <Field label="Favicon (ICO/PNG/SVG, max 200 KB)">
+                  <div className="space-y-2">
+                    <Input type="file" accept="image/x-icon,image/vnd.microsoft.icon,image/png,image/svg+xml" onChange={onFavicon} />
+                    {faviconDataUrl && (
+                      <div className="rounded border bg-muted/30 p-2 flex items-center justify-center h-12">
+                        <img src={faviconDataUrl} alt="Favicon Preview" className="max-h-8 object-contain" />
+                      </div>
+                    )}
+                  </div>
+                </Field>
+                <Field label="Primärfarbe">
+                  <div className="flex gap-2">
+                    <Input type="color" value={branding.primary_color} onChange={set("primary_color")} className="w-16 p-1 h-10" />
+                    <Input value={branding.primary_color} onChange={set("primary_color")} />
+                  </div>
+                </Field>
+                <Field label="Sekundärfarbe">
+                  <div className="flex gap-2">
+                    <Input type="color" value={branding.secondary_color} onChange={set("secondary_color")} className="w-16 p-1 h-10" />
+                    <Input value={branding.secondary_color} onChange={set("secondary_color")} />
+                  </div>
+                </Field>
+                <Field label="WhatsApp-Nummer (international, ohne +)"><Input value={branding.whatsapp_number} onChange={set("whatsapp_number")} placeholder="491234567890" /></Field>
+                <Field label="Kontakt-E-Mail *"><Input type="email" value={branding.email} onChange={set("email")} /></Field>
+                <Field label="Telefon"><Input value={branding.telefon} onChange={set("telefon")} /></Field>
+                <Field label="Straße & Hausnummer"><Input value={branding.strasse} onChange={set("strasse")} /></Field>
+                <Field label="PLZ"><Input value={branding.plz} onChange={set("plz")} maxLength={20} /></Field>
+                <Field label="Stadt"><Input value={branding.stadt} onChange={set("stadt")} /></Field>
+                <Field label="HRB-Nummer"><Input value={branding.hrb} onChange={set("hrb")} /></Field>
+                <Field label="Registergericht"><Input value={branding.registergericht} onChange={set("registergericht")} placeholder="Amtsgericht Berlin" /></Field>
+                <Field label="USt-IdNr."><Input value={branding.ust_id} onChange={set("ust_id")} placeholder="DE123456789" /></Field>
+                <Field label="Steuernummer"><Input value={branding.steuernummer} onChange={set("steuernummer")} /></Field>
+                <Field label="Geschäftsführer"><Input value={branding.geschaeftsfuehrer} onChange={set("geschaeftsfuehrer")} /></Field>
+                <Field label="Telefon 2 (optional)"><Input value={branding.telefon_2} onChange={set("telefon_2")} /></Field>
+                <Field label="Landing-Domain (für SEO/Canonical)"><Input value={branding.landing_domain} onChange={set("landing_domain")} placeholder="kunde-x.de" /></Field>
+                <Field label="API-Endpoint für Bewerbungen *">
+                  <Input value={branding.api_endpoint} onChange={set("api_endpoint")} placeholder={apiPlaceholder} />
+                </Field>
+                <Field label="Mitarbeiter-Portal URL (Redirect nach Bewerbung)">
+                  <Input value={branding.portal_url} onChange={set("portal_url")} placeholder="https://portal.deine-domain.de" />
+                </Field>
+                <Field label="Supabase URL (Backend, falls direkter Insert)">
+                  <Input value={branding.supabase_url} onChange={set("supabase_url")} placeholder="https://db.deine-domain.de" />
+                </Field>
+                <Field label="Supabase Anon Key">
+                  <Input value={branding.supabase_anon_key} onChange={set("supabase_anon_key")} placeholder="eyJhbGciOi..." />
+                </Field>
+                <Field label="Tenant-ID (für Multi-Tenant-Filter)">
+                  <Input value={branding.tenant_id} onChange={set("tenant_id")} placeholder="uuid" />
+                </Field>
+              </div>
+              <Field label="Impressum-Text">
+                <Textarea rows={4} value={branding.impressum} onChange={set("impressum")} />
+              </Field>
+
+              {/* Flow-Typ */}
+              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+                <Label className="text-xs font-semibold">Bewerbungs-Flow</Label>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBranding((b) => ({ ...b, flow_type: "classic" }))}
+                    className={cn(
+                      "text-left rounded-md border-2 p-3 transition-all text-xs",
+                      branding.flow_type === "classic"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40",
+                    )}
+                  >
+                    <div className="font-semibold mb-1">🟡 Klassisch</div>
+                    <p className="text-muted-foreground text-[11px]">
+                      Bewerbung landet als <code>neu</code> im Admin. Du akzeptierst manuell → System verschickt Einladungs-Mail.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBranding((b) => ({ ...b, flow_type: "fast" }))}
+                    className={cn(
+                      "text-left rounded-md border-2 p-3 transition-all text-xs",
+                      branding.flow_type === "fast"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40",
+                    )}
+                  >
+                    <div className="font-semibold mb-1">⚡ Fast-Track</div>
+                    <p className="text-muted-foreground text-[11px]">
+                      Bewerbung wird sofort als <code>akzeptiert</code> markiert. Bewerber wird direkt zu <code>/register</code> weitergeleitet — kein Admin-Schritt nötig.
+                    </p>
+                  </button>
                 </div>
-                <p className="text-xs text-muted-foreground">{t.description}</p>
-                <p className="text-[10px] text-muted-foreground/70 mt-2 font-mono">{t.id}</p>
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Step 2: Branding */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">2. Branding & Inhalte</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-3">
-            <Field label="Firmenname *"><Input value={branding.firmenname} onChange={set("firmenname")} placeholder="Mustermann GmbH" /></Field>
-            <Field label="Logo (PNG/JPG/SVG, max 2 MB)">
-              <div className="space-y-2">
-                <Input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={onLogo} />
-                {logoDataUrl && (
-                  <div className="rounded border bg-muted/30 p-2 flex items-center justify-center h-16">
-                    <img src={logoDataUrl} alt="Logo Preview" className="max-h-12 object-contain" />
-                  </div>
-                )}
-                <p className="text-[10px] text-muted-foreground">Empfohlen: ≥200×60 px, transparenter Hintergrund.</p>
-              </div>
-            </Field>
-            <Field label="Favicon (ICO/PNG/SVG, max 200 KB)">
-              <div className="space-y-2">
-                <Input type="file" accept="image/x-icon,image/vnd.microsoft.icon,image/png,image/svg+xml" onChange={onFavicon} />
-                {faviconDataUrl && (
-                  <div className="rounded border bg-muted/30 p-2 flex items-center justify-center h-12">
-                    <img src={faviconDataUrl} alt="Favicon Preview" className="max-h-8 object-contain" />
-                  </div>
-                )}
-              </div>
-            </Field>
-            <Field label="Primärfarbe">
-              <div className="flex gap-2">
-                <Input type="color" value={branding.primary_color} onChange={set("primary_color")} className="w-16 p-1 h-10" />
-                <Input value={branding.primary_color} onChange={set("primary_color")} />
-              </div>
-            </Field>
-            <Field label="Sekundärfarbe">
-              <div className="flex gap-2">
-                <Input type="color" value={branding.secondary_color} onChange={set("secondary_color")} className="w-16 p-1 h-10" />
-                <Input value={branding.secondary_color} onChange={set("secondary_color")} />
-              </div>
-            </Field>
-            <Field label="WhatsApp-Nummer (international, ohne +)"><Input value={branding.whatsapp_number} onChange={set("whatsapp_number")} placeholder="491234567890" /></Field>
-            <Field label="Kontakt-E-Mail *"><Input type="email" value={branding.email} onChange={set("email")} /></Field>
-            <Field label="Telefon"><Input value={branding.telefon} onChange={set("telefon")} /></Field>
-            <Field label="Straße & Hausnummer"><Input value={branding.strasse} onChange={set("strasse")} /></Field>
-            <Field label="PLZ"><Input value={branding.plz} onChange={set("plz")} maxLength={20} /></Field>
-            <Field label="Stadt"><Input value={branding.stadt} onChange={set("stadt")} /></Field>
-            <Field label="HRB-Nummer"><Input value={branding.hrb} onChange={set("hrb")} /></Field>
-            <Field label="Registergericht"><Input value={branding.registergericht} onChange={set("registergericht")} placeholder="Amtsgericht Berlin" /></Field>
-            <Field label="USt-IdNr."><Input value={branding.ust_id} onChange={set("ust_id")} placeholder="DE123456789" /></Field>
-            <Field label="Steuernummer"><Input value={branding.steuernummer} onChange={set("steuernummer")} /></Field>
-            <Field label="Geschäftsführer"><Input value={branding.geschaeftsfuehrer} onChange={set("geschaeftsfuehrer")} /></Field>
-            <Field label="Telefon 2 (optional)"><Input value={branding.telefon_2} onChange={set("telefon_2")} /></Field>
-            <Field label="Landing-Domain (für SEO/Canonical)"><Input value={branding.landing_domain} onChange={set("landing_domain")} placeholder="kunde-x.de" /></Field>
-            <Field label="API-Endpoint für Bewerbungen *">
-              <Input value={branding.api_endpoint} onChange={set("api_endpoint")} placeholder={apiPlaceholder} />
-            </Field>
-            <Field label="Mitarbeiter-Portal URL (Redirect nach Bewerbung)">
-              <Input value={branding.portal_url} onChange={set("portal_url")} placeholder="https://portal.deine-domain.de" />
-            </Field>
-            <Field label="Supabase URL (Backend, falls direkter Insert)">
-              <Input value={branding.supabase_url} onChange={set("supabase_url")} placeholder="https://db.deine-domain.de" />
-            </Field>
-            <Field label="Supabase Anon Key">
-              <Input value={branding.supabase_anon_key} onChange={set("supabase_anon_key")} placeholder="eyJhbGciOi..." />
-            </Field>
-            <Field label="Tenant-ID (für Multi-Tenant-Filter)">
-              <Input value={branding.tenant_id} onChange={set("tenant_id")} placeholder="uuid" />
-            </Field>
-          </div>
-          <Field label="Impressum-Text">
-            <Textarea rows={4} value={branding.impressum} onChange={set("impressum")} />
-          </Field>
+          {/* Step 3: Build */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">3. ZIP generieren</CardTitle>
+              <CardDescription>Lade die ZIP herunter und entpacke sie auf deinem VPS.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button onClick={handleGenerate} disabled={loading} className="gap-2 w-full sm:w-auto">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {loading ? "Generiere…" : "Landing-Page als ZIP herunterladen"}
+              </Button>
+              {lastFile && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  Letzter Download: <span className="font-mono">{lastFile}</span>
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Flow-Typ */}
-          <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-            <Label className="text-xs font-semibold">Bewerbungs-Flow</Label>
-            <div className="grid sm:grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setBranding((b) => ({ ...b, flow_type: "classic" }))}
-                className={cn(
-                  "text-left rounded-md border-2 p-3 transition-all text-xs",
-                  branding.flow_type === "classic"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/40",
-                )}
-              >
-                <div className="font-semibold mb-1">🟡 Klassisch</div>
-                <p className="text-muted-foreground text-[11px]">
-                  Bewerbung landet als <code>neu</code> im Admin. Du akzeptierst manuell → System verschickt Einladungs-Mail.
-                </p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setBranding((b) => ({ ...b, flow_type: "fast" }))}
-                className={cn(
-                  "text-left rounded-md border-2 p-3 transition-all text-xs",
-                  branding.flow_type === "fast"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/40",
-                )}
-              >
-                <div className="font-semibold mb-1">⚡ Fast-Track</div>
-                <p className="text-muted-foreground text-[11px]">
-                  Bewerbung wird sofort als <code>akzeptiert</code> markiert. Bewerber wird direkt zu <code>/register</code> weitergeleitet — kein Admin-Schritt nötig.
-                </p>
-              </button>
+        {/* RIGHT: Sticky Live-Preview (desktop) / collapsible (mobile) */}
+        <div className={cn("lg:block", showPreview ? "block" : "hidden")}>
+          <div className="lg:sticky lg:top-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                <Eye className="h-3.5 w-3.5" /> Live-Vorschau
+              </div>
+              <span className="text-[10px] text-muted-foreground">aktualisiert live</span>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-
-      {/* Step 3: Build */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">3. ZIP generieren</CardTitle>
-          <CardDescription>Lade die ZIP herunter und entpacke sie auf deinem VPS.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setShowPreview((s) => !s)} className="gap-2">
-              <Eye className="h-4 w-4" />
-              {showPreview ? "Vorschau ausblenden" : "Live-Vorschau anzeigen"}
-            </Button>
-            <Button onClick={handleGenerate} disabled={loading} className="gap-2">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              {loading ? "Generiere…" : "Landing-Page als ZIP herunterladen"}
-            </Button>
-          </div>
-          {showPreview && (
-            <div className="rounded border overflow-hidden bg-background">
+            <div className="rounded-lg border-2 border-border overflow-hidden bg-background shadow-sm">
+              <div className="flex items-center gap-1.5 bg-muted/50 px-3 py-2 border-b">
+                <div className="flex gap-1">
+                  <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
+                </div>
+                <div className="flex-1 text-center text-[10px] text-muted-foreground font-mono truncate">
+                  {branding.landing_domain || "preview.localhost"}
+                </div>
+              </div>
               <iframe
                 title="Landing Preview"
                 srcDoc={previewSrcDoc}
                 sandbox="allow-same-origin"
-                className="w-full h-[700px] border-0"
+                className="w-full h-[calc(100vh-180px)] min-h-[600px] border-0 bg-white"
               />
             </div>
-          )}
-          {lastFile && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              Letzter Download: <span className="font-mono">{lastFile}</span>
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
