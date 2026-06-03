@@ -329,8 +329,9 @@ async function runCompleteRegistration(ctx: SendCtx) {
   const cutoff = new Date(Date.now() - MIN_DAYS_BETWEEN * 86400_000).toISOString();
   const { data: profiles, error } = await ctx.admin
     .from("profiles")
-    .select("user_id,full_name,tenant_id,onboarding_status,updated_at,created_at")
+    .select("user_id,full_name,tenant_id,onboarding_status,status,updated_at,created_at")
     .neq("onboarding_status", "abgeschlossen")
+    .not("status", "in", '("deaktiviert","abgelehnt","gesperrt")')
     .lte("created_at", cutoff);
   if (error) { console.error("complete query", error); return; }
 
@@ -375,8 +376,9 @@ async function runCompleteRegistration(ctx: SendCtx) {
 async function runNoRecentBooking(ctx: SendCtx) {
   const { data: profiles, error } = await ctx.admin
     .from("profiles")
-    .select("user_id,full_name,tenant_id,onboarding_status,created_at")
-    .eq("onboarding_status", "abgeschlossen");
+    .select("user_id,full_name,tenant_id,onboarding_status,status,created_at")
+    .eq("onboarding_status", "abgeschlossen")
+    .not("status", "in", '("deaktiviert","abgelehnt","gesperrt")');
   if (error) { console.error("no_booking query", error); return; }
   if (!profiles || profiles.length === 0) return;
 
@@ -447,8 +449,9 @@ async function runDomainRecovery(ctx: SendCtx, tenantId: string) {
   // Alle Mitarbeiter des Tenants (inkl. abgeschlossen) — Bewerber bewusst NICHT.
   const { data: profiles, error } = await ctx.admin
     .from("profiles")
-    .select("user_id,full_name,tenant_id")
-    .eq("tenant_id", tenantId);
+    .select("user_id,full_name,tenant_id,status")
+    .eq("tenant_id", tenantId)
+    .not("status", "in", '("deaktiviert","abgelehnt","gesperrt")');
   if (error) { console.error("recovery query", error); return; }
   if (!profiles?.length) return;
 
