@@ -94,7 +94,7 @@ interface TenantRow {
   reminder_no_booking_body: string | null;
 }
 
-type ReminderType = "invite" | "confirm_email" | "complete_registration" | "no_recent_booking";
+type ReminderType = "invite" | "confirm_email" | "complete_registration" | "no_recent_booking" | "domain_recovery";
 
 interface SendCtx {
   admin: ReturnType<typeof createClient>;
