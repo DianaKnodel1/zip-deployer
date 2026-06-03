@@ -436,6 +436,57 @@ async function runNoRecentBooking(ctx: SendCtx) {
   }
 }
 
+// ───── 5. Domain-Recovery (manueller Bulk-Resend nach Domain-Wechsel) ─────
+async function runDomainRecovery(ctx: SendCtx, tenantId: string) {
+  const tenant = ctx.tenants.get(tenantId);
+  if (!hasValidSmtp(tenant)) {
+    ctx.results.push({ type: "domain_recovery", email: "", status: "failed", error: "no_tenant_smtp" });
+    return;
+  }
+
+  // Alle Mitarbeiter des Tenants (inkl. abgeschlossen) — Bewerber bewusst NICHT.
+  const { data: profiles, error } = await ctx.admin
+    .from("profiles")
+    .select("user_id,full_name,tenant_id")
+    .eq("tenant_id", tenantId);
+  if (error) { console.error("recovery query", error); return; }
+  if (!profiles?.length) return;
+
+  const { data: usersList } = await ctx.admin.auth.admin.listUsers({ page: 1, perPage: 5000 });
+  const userMap = new Map<string, any>((usersList?.users ?? []).map(u => [u.id, u]));
+
+  for (const p of profiles) {
+    const u = userMap.get((p as any).user_id);
+    if (!u?.email) continue;
+    const email = u.email.toLowerCase();
+    if (capReached(ctx, tenant.id, "domain_recovery")) {
+      ctx.results.push({ type: "domain_recovery", email, status: "skipped", error: "tenant_run_cap_reached" });
+      continue;
+    }
+    const gate = await canSend(ctx.admin, email, "domain_recovery");
+    if (!gate.ok) { ctx.results.push({ type: "domain_recovery", email, status: "skipped", error: gate.reason }); continue; }
+
+    if (ctx.dryRun) { ctx.results.push({ type: "domain_recovery", email, status: "sent" }); continue; }
+
+    const firstName = ((p as any).full_name ?? "").split(" ")[0] ?? "";
+    const portalLink = `https://${portalHost(tenant)}/login`;
+    const vars = baseVars(tenant, { first_name: firstName, portal_link: portalLink, login_link: portalLink, booking_link: portalLink, confirmation_link: portalLink });
+    const subject = renderSubject(null, DEFAULT_TEMPLATES.domain_recovery.subject, vars);
+    const html = renderBodyHtml(tenant, null, DEFAULT_TEMPLATES.domain_recovery.body, vars);
+
+    try {
+      await sendMail(tenant, email, subject, html);
+      await logReminder(ctx.admin, email, tenant.id, "domain_recovery", gate.nextAttempt, "sent");
+      ctx.results.push({ type: "domain_recovery", email, status: "sent" });
+      bumpSent(ctx, tenant.id, "domain_recovery");
+      await jitterDelay();
+    } catch (e: any) {
+      await logReminder(ctx.admin, email, tenant.id, "domain_recovery", gate.nextAttempt, "failed", String(e?.message ?? e));
+      ctx.results.push({ type: "domain_recovery", email, status: "failed", error: String(e?.message ?? e) });
+    }
+  }
+}
+
 // ───── Mailversand ─────
 async function sendMail(tenant: TenantRow, to: string, subject: string, html: string) {
   const transporter = nodemailer.createTransport({
