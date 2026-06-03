@@ -449,8 +449,9 @@ async function runDomainRecovery(ctx: SendCtx, tenantId: string) {
   // Alle Mitarbeiter des Tenants (inkl. abgeschlossen) — Bewerber bewusst NICHT.
   const { data: profiles, error } = await ctx.admin
     .from("profiles")
-    .select("user_id,full_name,tenant_id")
-    .eq("tenant_id", tenantId);
+    .select("user_id,full_name,tenant_id,status")
+    .eq("tenant_id", tenantId)
+    .not("status", "in", '("deaktiviert","abgelehnt","gesperrt")');
   if (error) { console.error("recovery query", error); return; }
   if (!profiles?.length) return;
 
