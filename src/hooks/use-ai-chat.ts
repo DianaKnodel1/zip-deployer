@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { BACKEND_ANON_KEY, backendFunctionUrl } from "@/lib/backend-config";
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+const CHAT_URL = backendFunctionUrl("ai-chat");
 
 export interface AiMessage {
   role: "user" | "assistant";
@@ -45,7 +46,7 @@ export function useAiChat() {
       abortRef.current = controller;
 
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const token = session?.access_token ?? BACKEND_ANON_KEY;
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
