@@ -30,6 +30,19 @@ function AdminRecoveryPage() {
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [history, setHistory] = useState<Array<{ id: string; created_at: string; comment: string | null }>>([]);
+
+  const loadHistory = async (tid: string) => {
+    const { data } = await (supabase as any)
+      .from("activity_log")
+      .select("id,created_at,comment")
+      .eq("entity_type", "tenant")
+      .eq("entity_id", tid)
+      .eq("action", "domain_recovery_versendet")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setHistory((data ?? []) as any);
+  };
 
   useEffect(() => {
     (async () => {
@@ -39,12 +52,13 @@ function AdminRecoveryPage() {
   }, []);
 
   useEffect(() => {
-    if (!tenantId) { setRecipients([]); return; }
+    if (!tenantId) { setRecipients([]); setHistory([]); return; }
     setLoadingPreview(true);
     affectedFn({ data: { tenant_id: tenantId } })
       .then((r) => setRecipients(r.recipients))
       .catch((e) => toast({ title: "Fehler", description: String(e?.message ?? e), variant: "destructive" }))
       .finally(() => setLoadingPreview(false));
+    loadHistory(tenantId);
   }, [tenantId]);
 
   const send = async (dryRun: boolean) => {
