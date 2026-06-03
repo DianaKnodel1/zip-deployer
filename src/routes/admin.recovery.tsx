@@ -33,8 +33,8 @@ function AdminRecoveryPage() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("tenants").select("id,name,domain,primary_domain").eq("is_active", true).order("name");
-      setTenants(data ?? []);
+      const { data } = await (supabase as any).from("tenants").select("id,name,domain,primary_domain").eq("is_active", true).order("name");
+      setTenants((data ?? []) as Tenant[]);
     })();
   }, []);
 
