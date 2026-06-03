@@ -47,12 +47,16 @@ serve(async (req) => {
       return json({ error: "Tenant hat keine vollständige SMTP-Konfiguration" }, 400);
     }
 
-    // User per E-Mail finden
+    // User per E-Mail finden. WICHTIG: Niemals unterscheiden, ob die Adresse
+    // existiert / bestätigt / unbekannt ist — sonst wird das ein Account-Enumeration-Oracle.
+    // In allen Fällen identische 200-Response.
+    const GENERIC_OK = json({ success: true }, 200);
+
     const { data: list, error: lErr } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if (lErr) return json({ error: lErr.message }, 500);
+    if (lErr) { console.error("listUsers failed:", lErr); return GENERIC_OK; }
     const user = list.users.find((u) => (u.email ?? "").toLowerCase() === email.toLowerCase());
-    if (!user) return json({ error: "Kein Account mit dieser E-Mail gefunden" }, 404);
-    if (user.email_confirmed_at) return json({ success: true, already_confirmed: true }, 200);
+    if (!user) return GENERIC_OK;
+    if (user.email_confirmed_at) return GENERIC_OK;
 
     // Frischen Confirmation-Link erzeugen (ohne Passwort → existierender User)
     const redirectTo = redirect_to ?? `https://${tenant.domain}/auth/confirmed`;
