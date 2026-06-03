@@ -107,10 +107,43 @@ interface SendCtx {
   sentCountByTenantType: Map<string, number>;
 }
 
+// Auth-Gate: nur Cron (mit CRON_SECRET) oder eingeloggter Admin dürfen triggern.
+async function authorize(req: Request, admin: any): Promise<{ ok: true } | { ok: false; status: number; msg: string }> {
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const url = new URL(req.url);
+  const providedSecret = req.headers.get("x-cron-secret") ?? url.searchParams.get("key");
+  if (cronSecret && providedSecret && providedSecret === cronSecret) return { ok: true };
+
+  const authHeader = req.headers.get("authorization") ?? "";
+  const jwt = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : "";
+  if (!jwt) return { ok: false, status: 401, msg: "Unauthorized" };
+
+  const { data: userRes, error: uErr } = await admin.auth.getUser(jwt);
+  if (uErr || !userRes?.user) return { ok: false, status: 401, msg: "Unauthorized" };
+
+  const { data: role } = await admin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userRes.user.id)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!role) return { ok: false, status: 403, msg: "Forbidden" };
+  return { ok: true };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+
+    const authz = await authorize(req, admin);
+    if (!authz.ok) return json({ error: authz.msg }, authz.status);
+
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const dryRun = body?.dry_run === true;
     const onlyType: ReminderType | null = body?.only_type ?? null;
@@ -127,12 +160,6 @@ serve(async (req) => {
         message: `Außerhalb der Sendezeit (${QUIET_HOURS_START}:00–${QUIET_HOURS_END}:00 Europe/Berlin). Es wurden keine Mails gesendet.`,
       }, 200);
     }
-
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
 
     // Tenants vorladen
     const { data: tList, error: tErr } = await admin
@@ -155,13 +182,22 @@ serve(async (req) => {
       if (!onlyType || onlyType === "no_recent_booking") await runNoRecentBooking(ctx);
     }
 
+    // Keine Empfänger-Details in der Response (würde sonst Mail-Adressen leaken).
+    // Aggregierte Zähler pro Typ reichen für das Admin-UI.
+    const byType: Record<string, { sent: number; skipped: number; failed: number }> = {};
+    for (const r of ctx.results) {
+      const k = r.type;
+      byType[k] ??= { sent: 0, skipped: 0, failed: 0 };
+      byType[k][r.status as "sent" | "skipped" | "failed"]++;
+    }
+
     return json({
       success: true,
       dry_run: dryRun,
       sent: ctx.results.filter(r => r.status === "sent").length,
       skipped: ctx.results.filter(r => r.status === "skipped").length,
       failed: ctx.results.filter(r => r.status === "failed").length,
-      details: ctx.results,
+      by_type: byType,
     }, 200);
   } catch (err: any) {
     console.error(err);
