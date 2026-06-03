@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Users, AlertTriangle } from "lucide-react";
+import { Loader2, Send, Users, AlertTriangle, History } from "lucide-react";
 import {
   enqueueDomainRecoveryMails,
   getAffectedRecipients,
@@ -30,6 +30,19 @@ function AdminRecoveryPage() {
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [history, setHistory] = useState<Array<{ id: string; created_at: string; comment: string | null }>>([]);
+
+  const loadHistory = async (tid: string) => {
+    const { data } = await (supabase as any)
+      .from("activity_log")
+      .select("id,created_at,comment")
+      .eq("entity_type", "tenant")
+      .eq("entity_id", tid)
+      .eq("action", "domain_recovery_versendet")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setHistory((data ?? []) as any);
+  };
 
   useEffect(() => {
     (async () => {
@@ -39,12 +52,13 @@ function AdminRecoveryPage() {
   }, []);
 
   useEffect(() => {
-    if (!tenantId) { setRecipients([]); return; }
+    if (!tenantId) { setRecipients([]); setHistory([]); return; }
     setLoadingPreview(true);
     affectedFn({ data: { tenant_id: tenantId } })
       .then((r) => setRecipients(r.recipients))
       .catch((e) => toast({ title: "Fehler", description: String(e?.message ?? e), variant: "destructive" }))
       .finally(() => setLoadingPreview(false));
+    loadHistory(tenantId);
   }, [tenantId]);
 
   const send = async (dryRun: boolean) => {
@@ -53,6 +67,7 @@ function AdminRecoveryPage() {
     try {
       const r = await sendFn({ data: { tenant_id: tenantId, dry_run: dryRun } });
       setResult(r);
+      if (!dryRun) loadHistory(tenantId);
       toast({
         title: dryRun ? "Dry-Run abgeschlossen" : "Recovery-Mails versendet",
         description: `${r.sent ?? 0} gesendet · ${r.skipped ?? 0} übersprungen · ${r.failed ?? 0} fehlgeschlagen`,
@@ -138,6 +153,29 @@ function AdminRecoveryPage() {
                 Ergebnis
               </div>
               <pre className="text-xs overflow-auto max-h-64">{JSON.stringify(result, null, 2)}</pre>
+            </div>
+          )}
+
+          {tenantId && (
+            <div className="rounded-md border p-4">
+              <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                <History className="h-4 w-4" />
+                Vergangene Recovery-Läufe
+              </div>
+              {history.length === 0 ? (
+                <div className="text-xs text-muted-foreground">Noch kein Bulk-Re-Send für diesen Tenant durchgeführt.</div>
+              ) : (
+                <ul className="space-y-1.5 text-xs">
+                  {history.map(h => (
+                    <li key={h.id} className="flex gap-3 border-b pb-1.5 last:border-0">
+                      <span className="text-muted-foreground whitespace-nowrap">
+                        {new Date(h.created_at).toLocaleString("de-DE")}
+                      </span>
+                      <span>{h.comment ?? "—"}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </CardContent>
