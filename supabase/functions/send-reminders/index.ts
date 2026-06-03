@@ -92,6 +92,8 @@ interface TenantRow {
   reminder_completion_body: string | null;
   reminder_no_booking_subject: string | null;
   reminder_no_booking_body: string | null;
+  reminder_recovery_subject: string | null;
+  reminder_recovery_body: string | null;
 }
 
 type ReminderType = "invite" | "confirm_email" | "complete_registration" | "no_recent_booking" | "domain_recovery";
