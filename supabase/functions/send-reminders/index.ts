@@ -271,27 +271,40 @@ async function runInvites(ctx: SendCtx) {
 // ───── 2. Confirm-Email-Reminder ─────
 async function runConfirmEmail(ctx: SendCtx) {
   const { data: usersList } = await ctx.admin.auth.admin.listUsers({ page: 1, perPage: 5000 });
-  const unconfirmed = (usersList?.users ?? []).filter(u => !u.email_confirmed_at && u.email);
+  const BLOCKED = new Set(["deaktiviert", "abgelehnt", "gesperrt"]);
+  const unconfirmed = (usersList?.users ?? []).filter(u => {
+    if (!u.email || u.email_confirmed_at) return false;
+    // Skip gebannte Auth-User
+    const banned = (u as any).banned_until;
+    if (banned && new Date(banned).getTime() > Date.now()) return false;
+    return true;
+  });
 
-  // Profile für tenant_id-Lookup
+  // Profile für tenant_id-Lookup + Status-Filter
   const userIds = unconfirmed.map(u => u.id);
   let tenantByUser = new Map<string, string>();
+  const blockedUsers = new Set<string>();
   if (userIds.length > 0) {
     const { data: profiles } = await ctx.admin
       .from("profiles")
-      .select("user_id,tenant_id")
+      .select("user_id,tenant_id,status")
       .in("user_id", userIds);
-    (profiles ?? []).forEach((p: any) => { if (p.tenant_id) tenantByUser.set(p.user_id, p.tenant_id); });
+    (profiles ?? []).forEach((p: any) => {
+      if (p.tenant_id) tenantByUser.set(p.user_id, p.tenant_id);
+      if (BLOCKED.has(p.status)) blockedUsers.add(p.user_id);
+    });
   }
 
   const cutoffMs = MIN_DAYS_BETWEEN * 86400_000;
   for (const u of unconfirmed) {
+    if (blockedUsers.has(u.id)) continue;
     const created = new Date(u.created_at!).getTime();
     if (Date.now() - created < cutoffMs) continue;
 
     const email = u.email!.toLowerCase();
     const tenantId = tenantByUser.get(u.id);
     const tenant = tenantId ? ctx.tenants.get(tenantId) : null;
+
     if (!hasValidSmtp(tenant)) { ctx.results.push({ type: "confirm_email", email, status: "skipped", error: "no_tenant_smtp" }); continue; }
     if (capReached(ctx, tenant.id, "confirm_email")) { ctx.results.push({ type: "confirm_email", email, status: "skipped", error: "tenant_run_cap_reached" }); continue; }
 
