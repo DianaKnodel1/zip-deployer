@@ -67,6 +67,7 @@ function AdminRecoveryPage() {
     try {
       const r = await sendFn({ data: { tenant_id: tenantId, dry_run: dryRun } });
       setResult(r);
+      if (!dryRun) loadHistory(tenantId);
       toast({
         title: dryRun ? "Dry-Run abgeschlossen" : "Recovery-Mails versendet",
         description: `${r.sent ?? 0} gesendet · ${r.skipped ?? 0} übersprungen · ${r.failed ?? 0} fehlgeschlagen`,
