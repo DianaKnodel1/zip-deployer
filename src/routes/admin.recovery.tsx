@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Users, AlertTriangle } from "lucide-react";
+import { Loader2, Send, Users, AlertTriangle, History } from "lucide-react";
 import {
   enqueueDomainRecoveryMails,
   getAffectedRecipients,
