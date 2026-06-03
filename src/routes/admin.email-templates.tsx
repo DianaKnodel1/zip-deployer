@@ -36,6 +36,10 @@ const REMINDER_DEFAULTS = {
     subject: "Neue Aufträge warten auf dich – {{tenant_name}}",
     body: `Hallo {{first_name}},\n\ndu hast seit über 7 Tagen keine Aufträge mehr bei {{tenant_name}} gebucht. Im Portal warten freie Termine — sichere dir jetzt deinen nächsten Einsatz.\n\n{{cta:Aufträge ansehen|{{booking_link}}}}\n\nOder kopiere diesen Link: {{booking_link}}`,
   },
+  recovery: {
+    subject: "Wichtig: Neue Portal-Adresse für {{tenant_name}}",
+    body: `Hallo {{first_name}},\n\nunser Mitarbeiter-Portal hat eine neue Adresse. Bitte nutze ab sofort den folgenden Link für Login und Aufträge:\n\n{{cta:Zum neuen Portal|{{portal_link}}}}\n\nFalls der Button nicht funktioniert: {{portal_link}}\n\nDeine Zugangsdaten bleiben unverändert.`,
+  },
 };
 
 interface TenantEmail {
@@ -66,6 +70,8 @@ interface TenantEmail {
   reminder_completion_body: string | null;
   reminder_no_booking_subject: string | null;
   reminder_no_booking_body: string | null;
+  reminder_recovery_subject: string | null;
+  reminder_recovery_body: string | null;
 }
 
 const PLACEHOLDERS = [
@@ -293,12 +299,14 @@ function AdminEmailTemplatesPage() {
   const [rCompletionBody, setRCompletionBody] = useState("");
   const [rNoBookingSubject, setRNoBookingSubject] = useState("");
   const [rNoBookingBody, setRNoBookingBody] = useState("");
+  const [rRecoverySubject, setRRecoverySubject] = useState("");
+  const [rRecoveryBody, setRRecoveryBody] = useState("");
 
   const loadTenants = async () => {
     setLoading(true);
     const { data } = await (supabase as any)
       .from("tenants")
-      .select("id, name, domain, primary_color, logo_url, sender_email, sender_name, reply_to_email, smtp_host, smtp_port, smtp_username, smtp_password, welcome_email_subject, welcome_email_body, reset_email_subject, reset_email_body, email_signature, team_leader_name, reminder_invite_subject, reminder_invite_body, reminder_confirm_subject, reminder_confirm_body, reminder_completion_subject, reminder_completion_body, reminder_no_booking_subject, reminder_no_booking_body")
+      .select("id, name, domain, primary_color, logo_url, sender_email, sender_name, reply_to_email, smtp_host, smtp_port, smtp_username, smtp_password, welcome_email_subject, welcome_email_body, reset_email_subject, reset_email_body, email_signature, team_leader_name, reminder_invite_subject, reminder_invite_body, reminder_confirm_subject, reminder_confirm_body, reminder_completion_subject, reminder_completion_body, reminder_no_booking_subject, reminder_no_booking_body, reminder_recovery_subject, reminder_recovery_body")
       .order("name");
     const rows = (data as TenantEmail[] | null) ?? [];
     setTenants(rows);
@@ -331,6 +339,8 @@ function AdminEmailTemplatesPage() {
     setRCompletionBody(t.reminder_completion_body || REMINDER_DEFAULTS.completion.body);
     setRNoBookingSubject(t.reminder_no_booking_subject || REMINDER_DEFAULTS.no_booking.subject);
     setRNoBookingBody(t.reminder_no_booking_body || REMINDER_DEFAULTS.no_booking.body);
+    setRRecoverySubject(t.reminder_recovery_subject || REMINDER_DEFAULTS.recovery.subject);
+    setRRecoveryBody(t.reminder_recovery_body || REMINDER_DEFAULTS.recovery.body);
   };
 
   useEffect(() => {
@@ -371,6 +381,8 @@ function AdminEmailTemplatesPage() {
         reminder_completion_body: rCompletionBody,
         reminder_no_booking_subject: rNoBookingSubject,
         reminder_no_booking_body: rNoBookingBody,
+        reminder_recovery_subject: rRecoverySubject,
+        reminder_recovery_body: rRecoveryBody,
       } as any)
       .eq("id", selectedTenantId);
     setSaving(false);
@@ -554,6 +566,7 @@ function AdminEmailTemplatesPage() {
                 <TabsTrigger value="confirm" className="text-xs">E-Mail bestätigen</TabsTrigger>
                 <TabsTrigger value="completion" className="text-xs">Registrierung abschließen</TabsTrigger>
                 <TabsTrigger value="no_booking" className="text-xs">Keine Buchung (7 Tage)</TabsTrigger>
+                <TabsTrigger value="recovery" className="text-xs">Domain-Wechsel</TabsTrigger>
               </TabsList>
               <TabsContent value="invite">
                 <TemplateEditor
@@ -587,6 +600,18 @@ function AdminEmailTemplatesPage() {
                   label="Keine-Buchung-Erinnerung"
                   subject={rNoBookingSubject} onSubjectChange={setRNoBookingSubject}
                   body={rNoBookingBody} onBodyChange={setRNoBookingBody}
+                  signature={signature} onSignatureChange={setSignature}
+                  tenant={selectedTenant}
+                />
+              </TabsContent>
+              <TabsContent value="recovery">
+                <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 px-3 py-2 mb-2 text-[11px] text-amber-900 dark:text-amber-200">
+                  Einmaliger Versand pro Mitarbeiter, wenn du im Admin die <strong>primäre Portal-Domain</strong> wechselst. Verwende <code>{`{{portal_link}}`}</code> für die neue Adresse.
+                </div>
+                <TemplateEditor
+                  label="Domain-Wechsel-Mail"
+                  subject={rRecoverySubject} onSubjectChange={setRRecoverySubject}
+                  body={rRecoveryBody} onBodyChange={setRRecoveryBody}
                   signature={signature} onSignatureChange={setSignature}
                   tenant={selectedTenant}
                 />
