@@ -155,6 +155,29 @@ function AdminRecoveryPage() {
               <pre className="text-xs overflow-auto max-h-64">{JSON.stringify(result, null, 2)}</pre>
             </div>
           )}
+
+          {tenantId && (
+            <div className="rounded-md border p-4">
+              <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                <History className="h-4 w-4" />
+                Vergangene Recovery-Läufe
+              </div>
+              {history.length === 0 ? (
+                <div className="text-xs text-muted-foreground">Noch kein Bulk-Re-Send für diesen Tenant durchgeführt.</div>
+              ) : (
+                <ul className="space-y-1.5 text-xs">
+                  {history.map(h => (
+                    <li key={h.id} className="flex gap-3 border-b pb-1.5 last:border-0">
+                      <span className="text-muted-foreground whitespace-nowrap">
+                        {new Date(h.created_at).toLocaleString("de-DE")}
+                      </span>
+                      <span>{h.comment ?? "—"}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
