@@ -40,6 +40,7 @@ const navItems = [
   { title: "Verträge", url: "/admin/contracts", icon: FileText },
   { title: "Landing Pages", url: "/admin/landing-generator", icon: Globe },
   { title: "Domains", url: "/admin/domains", icon: Globe },
+  { title: "Recovery", url: "/admin/recovery", icon: Mail },
   { title: "Protokoll", url: "/admin/activity", icon: History },
   { title: "Einstellungen", url: "/admin/settings", icon: Settings },
 ];
