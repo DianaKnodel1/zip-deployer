@@ -56,6 +56,7 @@ import { Route as EmployeeAppointmentsRouteImport } from './routes/_employee/app
 import { Route as AdminTasksIndexRouteImport } from './routes/admin.tasks.index'
 import { Route as AdminEmployeesIndexRouteImport } from './routes/admin.employees.index'
 import { Route as AdminApplicationsIndexRouteImport } from './routes/admin.applications.index'
+import { Route as ApiPublicDomainHealthCronRouteImport } from './routes/api/public/domain-health-cron'
 import { Route as ApiPublicApplicationsRouteImport } from './routes/api/public/applications'
 import { Route as AdminEmployeesUserIdRouteImport } from './routes/admin.employees.$userId'
 import { Route as AdminAssignmentsAssignmentIdRouteImport } from './routes/admin.assignments.$assignmentId'
@@ -297,6 +298,12 @@ const AdminApplicationsIndexRoute = AdminApplicationsIndexRouteImport.update({
   path: '/applications/',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiPublicDomainHealthCronRoute =
+  ApiPublicDomainHealthCronRouteImport.update({
+    id: '/api/public/domain-health-cron',
+    path: '/api/public/domain-health-cron',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicApplicationsRoute = ApiPublicApplicationsRouteImport.update({
   id: '/api/public/applications',
   path: '/api/public/applications',
@@ -380,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/admin/assignments/$assignmentId': typeof AdminAssignmentsAssignmentIdRoute
   '/admin/employees/$userId': typeof AdminEmployeesUserIdRoute
   '/api/public/applications': typeof ApiPublicApplicationsRoute
+  '/api/public/domain-health-cron': typeof ApiPublicDomainHealthCronRoute
   '/admin/applications/': typeof AdminApplicationsIndexRoute
   '/admin/employees/': typeof AdminEmployeesIndexRoute
   '/admin/tasks/': typeof AdminTasksIndexRoute
@@ -433,6 +441,7 @@ export interface FileRoutesByTo {
   '/admin/assignments/$assignmentId': typeof AdminAssignmentsAssignmentIdRoute
   '/admin/employees/$userId': typeof AdminEmployeesUserIdRoute
   '/api/public/applications': typeof ApiPublicApplicationsRoute
+  '/api/public/domain-health-cron': typeof ApiPublicDomainHealthCronRoute
   '/admin/applications': typeof AdminApplicationsIndexRoute
   '/admin/employees': typeof AdminEmployeesIndexRoute
   '/admin/tasks': typeof AdminTasksIndexRoute
@@ -489,6 +498,7 @@ export interface FileRoutesById {
   '/admin/assignments/$assignmentId': typeof AdminAssignmentsAssignmentIdRoute
   '/admin/employees/$userId': typeof AdminEmployeesUserIdRoute
   '/api/public/applications': typeof ApiPublicApplicationsRoute
+  '/api/public/domain-health-cron': typeof ApiPublicDomainHealthCronRoute
   '/admin/applications/': typeof AdminApplicationsIndexRoute
   '/admin/employees/': typeof AdminEmployeesIndexRoute
   '/admin/tasks/': typeof AdminTasksIndexRoute
@@ -545,6 +555,7 @@ export interface FileRouteTypes {
     | '/admin/assignments/$assignmentId'
     | '/admin/employees/$userId'
     | '/api/public/applications'
+    | '/api/public/domain-health-cron'
     | '/admin/applications/'
     | '/admin/employees/'
     | '/admin/tasks/'
@@ -598,6 +609,7 @@ export interface FileRouteTypes {
     | '/admin/assignments/$assignmentId'
     | '/admin/employees/$userId'
     | '/api/public/applications'
+    | '/api/public/domain-health-cron'
     | '/admin/applications'
     | '/admin/employees'
     | '/admin/tasks'
@@ -653,6 +665,7 @@ export interface FileRouteTypes {
     | '/admin/assignments/$assignmentId'
     | '/admin/employees/$userId'
     | '/api/public/applications'
+    | '/api/public/domain-health-cron'
     | '/admin/applications/'
     | '/admin/employees/'
     | '/admin/tasks/'
@@ -670,6 +683,7 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   AuthConfirmedRoute: typeof AuthConfirmedRoute
   ApiPublicApplicationsRoute: typeof ApiPublicApplicationsRoute
+  ApiPublicDomainHealthCronRoute: typeof ApiPublicDomainHealthCronRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1003,6 +1017,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminApplicationsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/public/domain-health-cron': {
+      id: '/api/public/domain-health-cron'
+      path: '/api/public/domain-health-cron'
+      fullPath: '/api/public/domain-health-cron'
+      preLoaderRoute: typeof ApiPublicDomainHealthCronRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/applications': {
       id: '/api/public/applications'
       path: '/api/public/applications'
@@ -1173,6 +1194,7 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   AuthConfirmedRoute: AuthConfirmedRoute,
   ApiPublicApplicationsRoute: ApiPublicApplicationsRoute,
+  ApiPublicDomainHealthCronRoute: ApiPublicDomainHealthCronRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
