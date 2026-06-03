@@ -192,3 +192,48 @@ export const getAffectedRecipients = createServerFn({ method: "POST" })
 
     return { recipients, count: recipients.length };
   });
+
+// ============================================================
+// 4) Domain-Recovery Bulk-Resend (triggert Edge-Function)
+// ============================================================
+
+export const enqueueDomainRecoveryMails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      tenant_id: z.string().uuid(),
+      dry_run: z.boolean().optional(),
+    }).parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const SUPABASE_URL = process.env.SUPABASE_URL!;
+    const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-reminders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${SERVICE_KEY}`,
+      },
+      body: JSON.stringify({
+        mode: "domain_recovery",
+        tenant_id: data.tenant_id,
+        dry_run: data.dry_run === true,
+        ignore_quiet_hours: true,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error ?? `Edge function error (${res.status})`);
+
+    try {
+      await (supabaseAdmin as any).from("activity_log").insert({
+        action: "domain_recovery_versendet",
+        entity_type: "tenant",
+        entity_id: data.tenant_id,
+        actor_id: context.userId,
+        comment: `Recovery-Mails: ${json.sent ?? 0} gesendet, ${json.skipped ?? 0} übersprungen, ${json.failed ?? 0} fehlgeschlagen`,
+      });
+    } catch {}
+
+    return json;
+  });
