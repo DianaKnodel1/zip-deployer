@@ -17,7 +17,7 @@ function createSupabaseClient() {
     throw new Error(message);
   }
 
-  return createClient<any>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  return createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
       persistSession: true,
