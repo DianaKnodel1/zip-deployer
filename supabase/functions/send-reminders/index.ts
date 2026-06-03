@@ -563,6 +563,14 @@ const DEFAULT_TEMPLATES = {
 {{cta:Aufträge ansehen|{{booking_link}}}}
 <p style="font-size:13px;color:#94a3b8;margin:24px 0 0">Oder kopiere diesen Link: {{booking_link}}</p>`,
   },
+  domain_recovery: {
+    subject: "Wichtig: Neuer Portal-Link für {{tenant_name}}",
+    body: `<h1 style="font-size:22px;margin:0 0 16px;color:#0f172a">Dein neuer Portal-Link</h1>
+<p style="font-size:15px;line-height:1.6;color:#475569;margin:0 0 16px">Hallo {{first_name}},</p>
+<p style="font-size:15px;line-height:1.6;color:#475569;margin:0 0 24px">unsere bisherige Portal-Adresse ist nicht mehr erreichbar. Bitte nutze ab sofort den folgenden Link, um dich bei <strong>{{tenant_name}}</strong> einzuloggen:</p>
+{{cta:Zum neuen Portal|{{portal_link}}}}
+<p style="font-size:13px;color:#94a3b8;margin:24px 0 0">Oder kopiere diesen Link: {{portal_link}}</p>`,
+  },
 };
 
 type Vars = Record<string, string>;
