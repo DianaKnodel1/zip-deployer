@@ -28,6 +28,7 @@ import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminRevisionsRouteImport } from './routes/admin.revisions'
 import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
 import { Route as AdminRemindersRouteImport } from './routes/admin.reminders'
+import { Route as AdminRecoveryRouteImport } from './routes/admin.recovery'
 import { Route as AdminPostRouteImport } from './routes/admin.post'
 import { Route as AdminLandingGeneratorRouteImport } from './routes/admin.landing-generator'
 import { Route as AdminKycRouteImport } from './routes/admin.kyc'
@@ -55,6 +56,7 @@ import { Route as EmployeeAppointmentsRouteImport } from './routes/_employee/app
 import { Route as AdminTasksIndexRouteImport } from './routes/admin.tasks.index'
 import { Route as AdminEmployeesIndexRouteImport } from './routes/admin.employees.index'
 import { Route as AdminApplicationsIndexRouteImport } from './routes/admin.applications.index'
+import { Route as ApiPublicDomainHealthCronRouteImport } from './routes/api/public/domain-health-cron'
 import { Route as ApiPublicApplicationsRouteImport } from './routes/api/public/applications'
 import { Route as AdminEmployeesUserIdRouteImport } from './routes/admin.employees.$userId'
 import { Route as AdminAssignmentsAssignmentIdRouteImport } from './routes/admin.assignments.$assignmentId'
@@ -154,6 +156,11 @@ const AdminReviewsRoute = AdminReviewsRouteImport.update({
 const AdminRemindersRoute = AdminRemindersRouteImport.update({
   id: '/reminders',
   path: '/reminders',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRecoveryRoute = AdminRecoveryRouteImport.update({
+  id: '/recovery',
+  path: '/recovery',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPostRoute = AdminPostRouteImport.update({
@@ -291,6 +298,12 @@ const AdminApplicationsIndexRoute = AdminApplicationsIndexRouteImport.update({
   path: '/applications/',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiPublicDomainHealthCronRoute =
+  ApiPublicDomainHealthCronRouteImport.update({
+    id: '/api/public/domain-health-cron',
+    path: '/api/public/domain-health-cron',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicApplicationsRoute = ApiPublicApplicationsRouteImport.update({
   id: '/api/public/applications',
   path: '/api/public/applications',
@@ -357,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/admin/kyc': typeof AdminKycRoute
   '/admin/landing-generator': typeof AdminLandingGeneratorRoute
   '/admin/post': typeof AdminPostRoute
+  '/admin/recovery': typeof AdminRecoveryRoute
   '/admin/reminders': typeof AdminRemindersRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/revisions': typeof AdminRevisionsRoute
@@ -373,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/admin/assignments/$assignmentId': typeof AdminAssignmentsAssignmentIdRoute
   '/admin/employees/$userId': typeof AdminEmployeesUserIdRoute
   '/api/public/applications': typeof ApiPublicApplicationsRoute
+  '/api/public/domain-health-cron': typeof ApiPublicDomainHealthCronRoute
   '/admin/applications/': typeof AdminApplicationsIndexRoute
   '/admin/employees/': typeof AdminEmployeesIndexRoute
   '/admin/tasks/': typeof AdminTasksIndexRoute
@@ -409,6 +424,7 @@ export interface FileRoutesByTo {
   '/admin/kyc': typeof AdminKycRoute
   '/admin/landing-generator': typeof AdminLandingGeneratorRoute
   '/admin/post': typeof AdminPostRoute
+  '/admin/recovery': typeof AdminRecoveryRoute
   '/admin/reminders': typeof AdminRemindersRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/revisions': typeof AdminRevisionsRoute
@@ -425,6 +441,7 @@ export interface FileRoutesByTo {
   '/admin/assignments/$assignmentId': typeof AdminAssignmentsAssignmentIdRoute
   '/admin/employees/$userId': typeof AdminEmployeesUserIdRoute
   '/api/public/applications': typeof ApiPublicApplicationsRoute
+  '/api/public/domain-health-cron': typeof ApiPublicDomainHealthCronRoute
   '/admin/applications': typeof AdminApplicationsIndexRoute
   '/admin/employees': typeof AdminEmployeesIndexRoute
   '/admin/tasks': typeof AdminTasksIndexRoute
@@ -464,6 +481,7 @@ export interface FileRoutesById {
   '/admin/kyc': typeof AdminKycRoute
   '/admin/landing-generator': typeof AdminLandingGeneratorRoute
   '/admin/post': typeof AdminPostRoute
+  '/admin/recovery': typeof AdminRecoveryRoute
   '/admin/reminders': typeof AdminRemindersRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/revisions': typeof AdminRevisionsRoute
@@ -480,6 +498,7 @@ export interface FileRoutesById {
   '/admin/assignments/$assignmentId': typeof AdminAssignmentsAssignmentIdRoute
   '/admin/employees/$userId': typeof AdminEmployeesUserIdRoute
   '/api/public/applications': typeof ApiPublicApplicationsRoute
+  '/api/public/domain-health-cron': typeof ApiPublicDomainHealthCronRoute
   '/admin/applications/': typeof AdminApplicationsIndexRoute
   '/admin/employees/': typeof AdminEmployeesIndexRoute
   '/admin/tasks/': typeof AdminTasksIndexRoute
@@ -519,6 +538,7 @@ export interface FileRouteTypes {
     | '/admin/kyc'
     | '/admin/landing-generator'
     | '/admin/post'
+    | '/admin/recovery'
     | '/admin/reminders'
     | '/admin/reviews'
     | '/admin/revisions'
@@ -535,6 +555,7 @@ export interface FileRouteTypes {
     | '/admin/assignments/$assignmentId'
     | '/admin/employees/$userId'
     | '/api/public/applications'
+    | '/api/public/domain-health-cron'
     | '/admin/applications/'
     | '/admin/employees/'
     | '/admin/tasks/'
@@ -571,6 +592,7 @@ export interface FileRouteTypes {
     | '/admin/kyc'
     | '/admin/landing-generator'
     | '/admin/post'
+    | '/admin/recovery'
     | '/admin/reminders'
     | '/admin/reviews'
     | '/admin/revisions'
@@ -587,6 +609,7 @@ export interface FileRouteTypes {
     | '/admin/assignments/$assignmentId'
     | '/admin/employees/$userId'
     | '/api/public/applications'
+    | '/api/public/domain-health-cron'
     | '/admin/applications'
     | '/admin/employees'
     | '/admin/tasks'
@@ -625,6 +648,7 @@ export interface FileRouteTypes {
     | '/admin/kyc'
     | '/admin/landing-generator'
     | '/admin/post'
+    | '/admin/recovery'
     | '/admin/reminders'
     | '/admin/reviews'
     | '/admin/revisions'
@@ -641,6 +665,7 @@ export interface FileRouteTypes {
     | '/admin/assignments/$assignmentId'
     | '/admin/employees/$userId'
     | '/api/public/applications'
+    | '/api/public/domain-health-cron'
     | '/admin/applications/'
     | '/admin/employees/'
     | '/admin/tasks/'
@@ -658,6 +683,7 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   AuthConfirmedRoute: typeof AuthConfirmedRoute
   ApiPublicApplicationsRoute: typeof ApiPublicApplicationsRoute
+  ApiPublicDomainHealthCronRoute: typeof ApiPublicDomainHealthCronRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -793,6 +819,13 @@ declare module '@tanstack/react-router' {
       path: '/reminders'
       fullPath: '/admin/reminders'
       preLoaderRoute: typeof AdminRemindersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/recovery': {
+      id: '/admin/recovery'
+      path: '/recovery'
+      fullPath: '/admin/recovery'
+      preLoaderRoute: typeof AdminRecoveryRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/post': {
@@ -984,6 +1017,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminApplicationsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/public/domain-health-cron': {
+      id: '/api/public/domain-health-cron'
+      path: '/api/public/domain-health-cron'
+      fullPath: '/api/public/domain-health-cron'
+      preLoaderRoute: typeof ApiPublicDomainHealthCronRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/applications': {
       id: '/api/public/applications'
       path: '/api/public/applications'
@@ -1089,6 +1129,7 @@ interface AdminRouteChildren {
   AdminKycRoute: typeof AdminKycRoute
   AdminLandingGeneratorRoute: typeof AdminLandingGeneratorRoute
   AdminPostRoute: typeof AdminPostRoute
+  AdminRecoveryRoute: typeof AdminRecoveryRoute
   AdminRemindersRoute: typeof AdminRemindersRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminRevisionsRoute: typeof AdminRevisionsRoute
@@ -1120,6 +1161,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminKycRoute: AdminKycRoute,
   AdminLandingGeneratorRoute: AdminLandingGeneratorRoute,
   AdminPostRoute: AdminPostRoute,
+  AdminRecoveryRoute: AdminRecoveryRoute,
   AdminRemindersRoute: AdminRemindersRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminRevisionsRoute: AdminRevisionsRoute,
@@ -1152,6 +1194,7 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   AuthConfirmedRoute: AuthConfirmedRoute,
   ApiPublicApplicationsRoute: ApiPublicApplicationsRoute,
+  ApiPublicDomainHealthCronRoute: ApiPublicDomainHealthCronRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

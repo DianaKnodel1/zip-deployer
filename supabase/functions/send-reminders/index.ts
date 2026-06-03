@@ -94,7 +94,7 @@ interface TenantRow {
   reminder_no_booking_body: string | null;
 }
 
-type ReminderType = "invite" | "confirm_email" | "complete_registration" | "no_recent_booking";
+type ReminderType = "invite" | "confirm_email" | "complete_registration" | "no_recent_booking" | "domain_recovery";
 
 interface SendCtx {
   admin: ReturnType<typeof createClient>;
@@ -113,6 +113,8 @@ serve(async (req) => {
     const dryRun = body?.dry_run === true;
     const onlyType: ReminderType | null = body?.only_type ?? null;
     const ignoreQuietHours = body?.ignore_quiet_hours === true;
+    const mode: string = body?.mode ?? "reminders";
+    const recoveryTenantId: string | null = body?.tenant_id ?? null;
 
     // Quiet-Hours-Guard: keine Mails nachts. Cron-Läufe außerhalb 08–20 Uhr enden hier sofort.
     if (!dryRun && !ignoreQuietHours && isQuietHours()) {
@@ -141,10 +143,15 @@ serve(async (req) => {
 
     const ctx: SendCtx = { admin, tenants, dryRun, results: [], sentCountByTenantType: new Map() };
 
-    if (!onlyType || onlyType === "invite") await runInvites(ctx);
-    if (!onlyType || onlyType === "confirm_email") await runConfirmEmail(ctx);
-    if (!onlyType || onlyType === "complete_registration") await runCompleteRegistration(ctx);
-    if (!onlyType || onlyType === "no_recent_booking") await runNoRecentBooking(ctx);
+    if (mode === "domain_recovery") {
+      if (!recoveryTenantId) return json({ error: "tenant_id required for domain_recovery" }, 400);
+      await runDomainRecovery(ctx, recoveryTenantId);
+    } else {
+      if (!onlyType || onlyType === "invite") await runInvites(ctx);
+      if (!onlyType || onlyType === "confirm_email") await runConfirmEmail(ctx);
+      if (!onlyType || onlyType === "complete_registration") await runCompleteRegistration(ctx);
+      if (!onlyType || onlyType === "no_recent_booking") await runNoRecentBooking(ctx);
+    }
 
     return json({
       success: true,
@@ -429,6 +436,57 @@ async function runNoRecentBooking(ctx: SendCtx) {
   }
 }
 
+// ───── 5. Domain-Recovery (manueller Bulk-Resend nach Domain-Wechsel) ─────
+async function runDomainRecovery(ctx: SendCtx, tenantId: string) {
+  const tenant = ctx.tenants.get(tenantId);
+  if (!hasValidSmtp(tenant)) {
+    ctx.results.push({ type: "domain_recovery", email: "", status: "failed", error: "no_tenant_smtp" });
+    return;
+  }
+
+  // Alle Mitarbeiter des Tenants (inkl. abgeschlossen) — Bewerber bewusst NICHT.
+  const { data: profiles, error } = await ctx.admin
+    .from("profiles")
+    .select("user_id,full_name,tenant_id")
+    .eq("tenant_id", tenantId);
+  if (error) { console.error("recovery query", error); return; }
+  if (!profiles?.length) return;
+
+  const { data: usersList } = await ctx.admin.auth.admin.listUsers({ page: 1, perPage: 5000 });
+  const userMap = new Map<string, any>((usersList?.users ?? []).map(u => [u.id, u]));
+
+  for (const p of profiles) {
+    const u = userMap.get((p as any).user_id);
+    if (!u?.email) continue;
+    const email = u.email.toLowerCase();
+    if (capReached(ctx, tenant.id, "domain_recovery")) {
+      ctx.results.push({ type: "domain_recovery", email, status: "skipped", error: "tenant_run_cap_reached" });
+      continue;
+    }
+    const gate = await canSend(ctx.admin, email, "domain_recovery");
+    if (!gate.ok) { ctx.results.push({ type: "domain_recovery", email, status: "skipped", error: gate.reason }); continue; }
+
+    if (ctx.dryRun) { ctx.results.push({ type: "domain_recovery", email, status: "sent" }); continue; }
+
+    const firstName = ((p as any).full_name ?? "").split(" ")[0] ?? "";
+    const portalLink = `https://${portalHost(tenant)}/login`;
+    const vars = baseVars(tenant, { first_name: firstName, portal_link: portalLink, login_link: portalLink, booking_link: portalLink, confirmation_link: portalLink });
+    const subject = renderSubject(null, DEFAULT_TEMPLATES.domain_recovery.subject, vars);
+    const html = renderBodyHtml(tenant, null, DEFAULT_TEMPLATES.domain_recovery.body, vars);
+
+    try {
+      await sendMail(tenant, email, subject, html);
+      await logReminder(ctx.admin, email, tenant.id, "domain_recovery", gate.nextAttempt, "sent");
+      ctx.results.push({ type: "domain_recovery", email, status: "sent" });
+      bumpSent(ctx, tenant.id, "domain_recovery");
+      await jitterDelay();
+    } catch (e: any) {
+      await logReminder(ctx.admin, email, tenant.id, "domain_recovery", gate.nextAttempt, "failed", String(e?.message ?? e));
+      ctx.results.push({ type: "domain_recovery", email, status: "failed", error: String(e?.message ?? e) });
+    }
+  }
+}
+
 // ───── Mailversand ─────
 async function sendMail(tenant: TenantRow, to: string, subject: string, html: string) {
   const transporter = nodemailer.createTransport({
@@ -504,6 +562,14 @@ const DEFAULT_TEMPLATES = {
 <p style="font-size:15px;line-height:1.6;color:#475569;margin:0 0 24px">du hast seit über 7 Tagen keine Aufträge mehr bei <strong>{{tenant_name}}</strong> gebucht. Im Portal warten freie Termine — sichere dir jetzt deinen nächsten Einsatz.</p>
 {{cta:Aufträge ansehen|{{booking_link}}}}
 <p style="font-size:13px;color:#94a3b8;margin:24px 0 0">Oder kopiere diesen Link: {{booking_link}}</p>`,
+  },
+  domain_recovery: {
+    subject: "Wichtig: Neuer Portal-Link für {{tenant_name}}",
+    body: `<h1 style="font-size:22px;margin:0 0 16px;color:#0f172a">Dein neuer Portal-Link</h1>
+<p style="font-size:15px;line-height:1.6;color:#475569;margin:0 0 16px">Hallo {{first_name}},</p>
+<p style="font-size:15px;line-height:1.6;color:#475569;margin:0 0 24px">unsere bisherige Portal-Adresse ist nicht mehr erreichbar. Bitte nutze ab sofort den folgenden Link, um dich bei <strong>{{tenant_name}}</strong> einzuloggen:</p>
+{{cta:Zum neuen Portal|{{portal_link}}}}
+<p style="font-size:13px;color:#94a3b8;margin:24px 0 0">Oder kopiere diesen Link: {{portal_link}}</p>`,
   },
 };
 
