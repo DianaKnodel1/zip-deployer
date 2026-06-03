@@ -376,8 +376,9 @@ async function runCompleteRegistration(ctx: SendCtx) {
 async function runNoRecentBooking(ctx: SendCtx) {
   const { data: profiles, error } = await ctx.admin
     .from("profiles")
-    .select("user_id,full_name,tenant_id,onboarding_status,created_at")
-    .eq("onboarding_status", "abgeschlossen");
+    .select("user_id,full_name,tenant_id,onboarding_status,status,created_at")
+    .eq("onboarding_status", "abgeschlossen")
+    .not("status", "in", '("deaktiviert","abgelehnt","gesperrt")');
   if (error) { console.error("no_booking query", error); return; }
   if (!profiles || profiles.length === 0) return;
 
