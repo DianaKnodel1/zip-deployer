@@ -17,6 +17,8 @@ const Schema = z.object({
   city: z.string().trim().max(120).optional().nullable(),
   message: z.string().trim().max(2000).optional().nullable(),
   tenant_id: z.string().uuid().optional().nullable(),
+  flow_type: z.enum(["classic", "fast"]).optional().default("classic"),
+  portal_url: z.string().url().max(500).optional().nullable(),
 });
 
 function json(body: unknown, status = 200) {
@@ -42,6 +44,7 @@ export const Route = createFileRoute("/api/public/applications")({
           return json({ error: "Validation failed", details: parsed.error.flatten() }, 400);
         }
         const d = parsed.data;
+        const isFast = d.flow_type === "fast";
         const { error } = await supabaseAdmin.from("applications").insert({
           full_name: d.full_name,
           email: d.email,
@@ -50,13 +53,19 @@ export const Route = createFileRoute("/api/public/applications")({
           city: d.city ?? null,
           message: d.message ?? null,
           tenant_id: d.tenant_id ?? null,
-          status: "neu",
-        });
+          status: isFast ? "akzeptiert" : "neu",
+          flow_type: d.flow_type ?? "classic",
+        } as any);
         if (error) {
           console.error("[applications] insert error:", error);
           return json({ error: "Could not save application" }, 500);
         }
-        return json({ success: true });
+        let redirect_url: string | null = null;
+        if (isFast && d.portal_url) {
+          const base = d.portal_url.replace(/\/+$/, "");
+          redirect_url = `${base}/register?email=${encodeURIComponent(d.email)}&fast=1`;
+        }
+        return json({ success: true, flow_type: d.flow_type ?? "classic", redirect_url });
       },
     },
   },

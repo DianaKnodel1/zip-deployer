@@ -39,6 +39,7 @@ type Branding = {
   supabase_url: string;
   supabase_anon_key: string;
   tenant_id: string;
+  flow_type: "classic" | "fast";
 };
 
 const EMPTY: Branding = {
@@ -64,6 +65,7 @@ const EMPTY: Branding = {
   supabase_url: "",
   supabase_anon_key: "",
   tenant_id: "",
+  flow_type: "classic",
 };
 
 function LandingGeneratorPage() {
@@ -282,8 +284,46 @@ function LandingGeneratorPage() {
           <Field label="Impressum-Text">
             <Textarea rows={4} value={branding.impressum} onChange={set("impressum")} />
           </Field>
+
+          {/* Flow-Typ */}
+          <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+            <Label className="text-xs font-semibold">Bewerbungs-Flow</Label>
+            <div className="grid sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setBranding((b) => ({ ...b, flow_type: "classic" }))}
+                className={cn(
+                  "text-left rounded-md border-2 p-3 transition-all text-xs",
+                  branding.flow_type === "classic"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/40",
+                )}
+              >
+                <div className="font-semibold mb-1">🟡 Klassisch</div>
+                <p className="text-muted-foreground text-[11px]">
+                  Bewerbung landet als <code>neu</code> im Admin. Du akzeptierst manuell → System verschickt Einladungs-Mail.
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBranding((b) => ({ ...b, flow_type: "fast" }))}
+                className={cn(
+                  "text-left rounded-md border-2 p-3 transition-all text-xs",
+                  branding.flow_type === "fast"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/40",
+                )}
+              >
+                <div className="font-semibold mb-1">⚡ Fast-Track</div>
+                <p className="text-muted-foreground text-[11px]">
+                  Bewerbung wird sofort als <code>akzeptiert</code> markiert. Bewerber wird direkt zu <code>/register</code> weitergeleitet — kein Admin-Schritt nötig.
+                </p>
+              </button>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
 
       {/* Step 3: Build */}
       <Card>
