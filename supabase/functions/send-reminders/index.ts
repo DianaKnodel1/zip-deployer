@@ -113,6 +113,8 @@ serve(async (req) => {
     const dryRun = body?.dry_run === true;
     const onlyType: ReminderType | null = body?.only_type ?? null;
     const ignoreQuietHours = body?.ignore_quiet_hours === true;
+    const mode: string = body?.mode ?? "reminders";
+    const recoveryTenantId: string | null = body?.tenant_id ?? null;
 
     // Quiet-Hours-Guard: keine Mails nachts. Cron-Läufe außerhalb 08–20 Uhr enden hier sofort.
     if (!dryRun && !ignoreQuietHours && isQuietHours()) {
@@ -141,10 +143,15 @@ serve(async (req) => {
 
     const ctx: SendCtx = { admin, tenants, dryRun, results: [], sentCountByTenantType: new Map() };
 
-    if (!onlyType || onlyType === "invite") await runInvites(ctx);
-    if (!onlyType || onlyType === "confirm_email") await runConfirmEmail(ctx);
-    if (!onlyType || onlyType === "complete_registration") await runCompleteRegistration(ctx);
-    if (!onlyType || onlyType === "no_recent_booking") await runNoRecentBooking(ctx);
+    if (mode === "domain_recovery") {
+      if (!recoveryTenantId) return json({ error: "tenant_id required for domain_recovery" }, 400);
+      await runDomainRecovery(ctx, recoveryTenantId);
+    } else {
+      if (!onlyType || onlyType === "invite") await runInvites(ctx);
+      if (!onlyType || onlyType === "confirm_email") await runConfirmEmail(ctx);
+      if (!onlyType || onlyType === "complete_registration") await runCompleteRegistration(ctx);
+      if (!onlyType || onlyType === "no_recent_booking") await runNoRecentBooking(ctx);
+    }
 
     return json({
       success: true,
