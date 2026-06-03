@@ -92,6 +92,8 @@ interface TenantRow {
   reminder_completion_body: string | null;
   reminder_no_booking_subject: string | null;
   reminder_no_booking_body: string | null;
+  reminder_recovery_subject: string | null;
+  reminder_recovery_body: string | null;
 }
 
 type ReminderType = "invite" | "confirm_email" | "complete_registration" | "no_recent_booking" | "domain_recovery";
@@ -135,7 +137,7 @@ serve(async (req) => {
     // Tenants vorladen
     const { data: tList, error: tErr } = await admin
       .from("tenants")
-      .select("id,name,domain,primary_domain,logo_url,primary_color,sender_email,sender_name,reply_to_email,smtp_host,smtp_port,smtp_username,smtp_password,reminder_invite_subject,reminder_invite_body,reminder_confirm_subject,reminder_confirm_body,reminder_completion_subject,reminder_completion_body,reminder_no_booking_subject,reminder_no_booking_body");
+      .select("id,name,domain,primary_domain,logo_url,primary_color,sender_email,sender_name,reply_to_email,smtp_host,smtp_port,smtp_username,smtp_password,reminder_invite_subject,reminder_invite_body,reminder_confirm_subject,reminder_confirm_body,reminder_completion_subject,reminder_completion_body,reminder_no_booking_subject,reminder_no_booking_body,reminder_recovery_subject,reminder_recovery_body");
     if (tErr) return json({ error: tErr.message }, 500);
 
     const tenants = new Map<string, TenantRow>();
@@ -474,8 +476,8 @@ async function runDomainRecovery(ctx: SendCtx, tenantId: string) {
     const firstName = ((p as any).full_name ?? "").split(" ")[0] ?? "";
     const portalLink = `https://${portalHost(tenant)}/login`;
     const vars = baseVars(tenant, { first_name: firstName, portal_link: portalLink, login_link: portalLink, booking_link: portalLink, confirmation_link: portalLink });
-    const subject = renderSubject(null, DEFAULT_TEMPLATES.domain_recovery.subject, vars);
-    const html = renderBodyHtml(tenant, null, DEFAULT_TEMPLATES.domain_recovery.body, vars);
+    const subject = renderSubject(tenant.reminder_recovery_subject, DEFAULT_TEMPLATES.domain_recovery.subject, vars);
+    const html = renderBodyHtml(tenant, tenant.reminder_recovery_body, DEFAULT_TEMPLATES.domain_recovery.body, vars);
 
     try {
       await sendMail(tenant, email, subject, html);
